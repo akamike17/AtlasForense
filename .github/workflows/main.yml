@@ -19,7 +19,19 @@ jobs:
           dotnet-version: 8.0.x
       - name: Restore
         run: dotnet restore AtlasForense.slnx
+      - name: Audit dependencies
+        run: dotnet list AtlasForense.csproj package --vulnerable --include-transitive
       - name: Build
         run: dotnet build AtlasForense.slnx --configuration Release --no-restore
       - name: Test forensic workflow
         run: dotnet test AtlasForense.Tests/AtlasForense.Tests.csproj --configuration Release --collect:"XPlat Code Coverage" --logger "trx;LogFileName=atlas-forense-tests.trx"
+      - name: Publish test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-forense-test-evidence
+          path: |
+            AtlasForense.Tests/TestResults/**/*.trx
+            AtlasForense.Tests/TestResults/**/coverage.cobertura.xml
+          if-no-files-found: error
+          retention-days: 30
