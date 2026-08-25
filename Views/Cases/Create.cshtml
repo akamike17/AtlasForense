@@ -1,0 +1,14 @@
+@model CreateCaseInput
+@{ ViewData["Title"] = "Nuevo expediente"; }
+<div class="page-heading"><div><span class="eyebrow">Etapa 1 · Preparación</span><h1>Nuevo expediente</h1><p>Define objetivo, responsable y límites antes de intervenir cualquier activo.</p></div></div>
+<form asp-action="Create" method="post" class="panel form-panel">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-grid">
+        <label class="field span-2">Título del caso<input asp-for="Title" class="form-control" placeholder="Incidente o investigación" /><span asp-validation-for="Title"></span></label>
+        <label class="field">Organización solicitante<input asp-for="RequestingOrganization" class="form-control" /></label>
+        <label class="field">Examinador responsable<input asp-for="LeadExaminer" class="form-control" /></label>
+        <label class="field span-2">Alcance autorizado<textarea asp-for="Scope" class="form-control" rows="5" placeholder="Sistemas, periodo, objetivos y exclusiones"></textarea><span asp-validation-for="Scope"></span></label>
+    </div>
+    <div class="form-actions"><a asp-action="Index" class="btn btn-outline-light">Cancelar</a><button class="btn btn-primary">Crear expediente</button></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

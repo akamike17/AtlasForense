@@ -1,7 +1,11 @@
+using AtlasForense.Services;
+using Microsoft.AspNetCore.Http.Features;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options => options.MaxModelValidationErrors = 100);
+builder.Services.AddSingleton<IForensicCaseService, JsonForensicCaseService>();
+builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = 104_857_600);
 
 var app = builder.Build();
 
