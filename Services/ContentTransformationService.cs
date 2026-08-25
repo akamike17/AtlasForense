@@ -130,7 +130,7 @@ public sealed partial class ContentTransformationService : IContentTransformatio
     private static string Base32Encode(byte[] data)
     {
         if (data.Length == 0) return string.Empty;
-        var output = new StringBuilder((data.Length + 4) / 5 * 8); var buffer = data[0]; var next = 1; var bits = 8;
+        var output = new StringBuilder((data.Length + 4) / 5 * 8); var buffer = (int)data[0]; var next = 1; var bits = 8;
         while (bits > 0 || next < data.Length) { if (bits < 5) { if (next < data.Length) { buffer = (buffer << 8) | data[next++]; bits += 8; } else { buffer <<= 5 - bits; bits = 5; } } output.Append(Base32Alphabet[(buffer >> (bits - 5)) & 31]); bits -= 5; }
         while (output.Length % 8 != 0) output.Append('='); return output.ToString();
     }
@@ -144,7 +144,7 @@ public sealed partial class ContentTransformationService : IContentTransformatio
     private static string BaseXEncode(byte[] data, string alphabet)
     {
         if (data.Length == 0) return string.Empty; var digits = new List<int> { 0 };
-        foreach (var b in data) { var carry = b; for (var i = 0; i < digits.Count; i++) { carry += digits[i] << 8; digits[i] = carry % alphabet.Length; carry /= alphabet.Length; } while (carry > 0) { digits.Add(carry % alphabet.Length); carry /= alphabet.Length; } }
+        foreach (var b in data) { var carry = (int)b; for (var i = 0; i < digits.Count; i++) { carry += digits[i] << 8; digits[i] = carry % alphabet.Length; carry /= alphabet.Length; } while (carry > 0) { digits.Add(carry % alphabet.Length); carry /= alphabet.Length; } }
         var zeros = data.TakeWhile(x => x == 0).Count(); return new string(alphabet[0], zeros) + string.Concat(digits.AsEnumerable().Reverse().SkipWhile((_, i) => i == 0 && digits[^1] == 0 && zeros > 0).Select(x => alphabet[x]));
     }
     private static byte[] BaseXDecode(string value, string alphabet)

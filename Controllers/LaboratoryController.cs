@@ -11,20 +11,18 @@ public sealed class LaboratoryController(IContentTransformationService transform
     public IActionResult Index() => View(new TransformationLabViewModel());
 
     [HttpPost]
-    public IActionResult Transform(TransformationInput input)
+    public IActionResult Transform(TransformationLabViewModel model)
     {
-        var model = new TransformationLabViewModel { Input = input };
         if (!ModelState.IsValid) return View("Index", model);
-        model.Result = transformations.Transform(input);
+        model.Result = transformations.Transform(model.Input);
         return View("Index", model);
     }
 
     [HttpPost]
-    public IActionResult Detect(TransformationInput input)
+    public IActionResult Detect(TransformationLabViewModel model)
     {
-        var model = new TransformationLabViewModel { Input = input };
         if (!ModelState.IsValid) return View("Index", model);
-        model.DetectedLayers = transformations.DetectAndDecode(input.Input);
+        model.DetectedLayers = transformations.DetectAndDecode(model.Input.Input);
         return View("Index", model);
     }
 }
