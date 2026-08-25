@@ -37,6 +37,7 @@ public sealed class CasesController(IForensicCaseService service) : Controller
 
     [HttpPost] public Task<IActionResult> AddCustody(CustodyInput input, CancellationToken token) => Execute(input.CaseId, () => service.AddCustodyAsync(input, token));
     [HttpPost] public Task<IActionResult> StartAnalysis(Guid id, string actor, CancellationToken token) => Execute(id, () => service.StartAnalysisAsync(id, actor, token));
+    [HttpPost] public Task<IActionResult> AnalyzeEvidence(Guid caseId, Guid evidenceId, string actor, CancellationToken token) => Execute(caseId, () => service.AnalyzeEvidenceAsync(caseId, evidenceId, actor, token));
 
     [HttpPost]
     public Task<IActionResult> AddFinding(FindingInput input, CancellationToken token)

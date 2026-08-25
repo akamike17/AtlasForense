@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using AtlasForense.Models;
+using AtlasForense.Forensics;
 
 namespace AtlasForense.Services;
 
@@ -12,13 +13,15 @@ public sealed class JsonForensicCaseService : IForensicCaseService
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _databasePath;
     private readonly string _evidencePath;
+    private readonly IReadOnlyList<IForensicAnalyzer> _analyzers;
     private List<ForensicCase> _cases;
 
-    public JsonForensicCaseService(IWebHostEnvironment environment)
+    public JsonForensicCaseService(IWebHostEnvironment environment, IEnumerable<IForensicAnalyzer>? analyzers = null)
     {
         var dataPath = Path.Combine(environment.ContentRootPath, "App_Data");
         _evidencePath = Path.Combine(dataPath, "Evidence");
         _databasePath = Path.Combine(dataPath, "cases.json");
+        _analyzers = analyzers?.ToList() ?? [];
         Directory.CreateDirectory(_evidencePath);
         _cases = Load();
     }
@@ -116,6 +119,60 @@ public sealed class JsonForensicCaseService : IForensicCaseService
         return OperationResult.Ok("Etapa 2 completada. Análisis habilitado.");
     });
 
+    public async Task<OperationResult> AnalyzeEvidenceAsync(Guid caseId, Guid evidenceId, string actor, CancellationToken token)
+    {
+        await _gate.WaitAsync(token);
+        try
+        {
+            var item = Get(caseId);
+            if (item is null) return OperationResult.Fail("Expediente no encontrado.");
+            if (item.Status != CaseStatus.Analyzing) return OperationResult.Fail("El análisis automatizado requiere que la etapa 3 esté activa.");
+            var evidence = item.Evidence.FirstOrDefault(x => x.Id == evidenceId);
+            if (evidence is null) return OperationResult.Fail("Evidencia no encontrada.");
+            var analyzer = _analyzers.FirstOrDefault(x => x.CanAnalyze(evidence));
+            if (analyzer is null) return OperationResult.Fail("Aún no existe un analizador compatible con este tipo de evidencia.");
+
+            var path = Path.Combine(_evidencePath, item.Id.ToString("N"), evidence.StoredFileName);
+            if (!File.Exists(path)) return OperationResult.Fail("El archivo preservado no está disponible.");
+            var currentHash = await HashFileAsync(path, token);
+            if (!currentHash.Equals(evidence.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                AppendAudit(item, actor, "INTEGRITY_FAILURE", $"{evidence.Identifier}: hash almacenado {evidence.Sha256}; actual {currentHash}.");
+                await SaveAsync(token);
+                return OperationResult.Fail("La evidencia cambió desde su adquisición. El análisis fue bloqueado.");
+            }
+
+            var run = new AnalysisRun { EvidenceId = evidence.Id, AnalyzerId = analyzer.Id, AnalyzerVersion = analyzer.Version, StartedAtUtc = DateTimeOffset.UtcNow, NetworkBlocked = true, SampleExecuted = false };
+            item.AnalysisRuns.Add(run);
+            try
+            {
+                var output = await analyzer.AnalyzeAsync(new AnalyzerContext(item.Id, run.Id, evidence, path, token));
+                item.Artifacts.RemoveAll(x => x.EvidenceId == evidence.Id && x.AnalysisRunId != run.Id && x.Name != "Manual");
+                item.Artifacts.AddRange(output.Artifacts);
+                MergeIndicators(item, output.Indicators);
+                MergeEntities(item, output.Entities);
+                item.Relationships.AddRange(output.Relationships);
+                item.Events.AddRange(output.Events);
+                run.Success = true;
+                run.Summary = output.Summary;
+                run.CompletedAtUtc = DateTimeOffset.UtcNow;
+                AppendAudit(item, actor, "STATIC_ANALYSIS_COMPLETED", $"{evidence.Identifier}: {run.Summary}");
+                await SaveAsync(token);
+                return OperationResult.Ok(run.Summary);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                run.Success = false;
+                run.Error = exception.Message;
+                run.CompletedAtUtc = DateTimeOffset.UtcNow;
+                AppendAudit(item, actor, "STATIC_ANALYSIS_FAILED", $"{evidence.Identifier}: {exception.GetType().Name}");
+                await SaveAsync(token);
+                return OperationResult.Fail("El analizador no pudo procesar la evidencia; se conservó el registro de ejecución.");
+            }
+        }
+        finally { _gate.Release(); }
+    }
+
     public Task<OperationResult> AddFindingAsync(FindingInput input, CancellationToken token) => MutateAsync(input.CaseId, token, item =>
     {
         if (item.Status != CaseStatus.Analyzing) return OperationResult.Fail("Los hallazgos solo pueden registrarse durante el análisis.");
@@ -164,6 +221,26 @@ public sealed class JsonForensicCaseService : IForensicCaseService
         var entry = new AuditEntry { Sequence = item.AuditTrail.Count + 1, Actor = actor.Trim(), Action = action, Detail = detail, PreviousHash = previous };
         entry.EntryHash = HashText($"{item.Id}|{entry.Sequence}|{entry.OccurredAtUtc:O}|{entry.Actor}|{entry.Action}|{entry.Detail}|{previous}");
         item.AuditTrail.Add(entry);
+    }
+
+    private static void MergeIndicators(ForensicCase item, IEnumerable<CaseIndicator> indicators)
+    {
+        foreach (var indicator in indicators)
+        {
+            var existing = item.Indicators.FirstOrDefault(x => x.Type == indicator.Type && x.NormalizedValue.Equals(indicator.NormalizedValue, StringComparison.OrdinalIgnoreCase));
+            if (existing is null) item.Indicators.Add(indicator);
+            else foreach (var evidenceId in indicator.EvidenceIds.Where(id => !existing.EvidenceIds.Contains(id))) existing.EvidenceIds.Add(evidenceId);
+        }
+    }
+
+    private static void MergeEntities(ForensicCase item, IEnumerable<CaseEntity> entities)
+    {
+        foreach (var entity in entities)
+        {
+            var existing = item.Entities.FirstOrDefault(x => x.Type == entity.Type && x.Value.Equals(entity.Value, StringComparison.OrdinalIgnoreCase));
+            if (existing is null) item.Entities.Add(entity);
+            else foreach (var evidenceId in entity.EvidenceIds.Where(id => !existing.EvidenceIds.Contains(id))) existing.EvidenceIds.Add(evidenceId);
+        }
     }
 
     private List<ForensicCase> Load()

@@ -18,6 +18,13 @@ public sealed class ForensicCase
     public CaseStatus Status { get; set; } = CaseStatus.Draft;
     public AuthorizationRecord? Authorization { get; set; }
     public List<EvidenceItem> Evidence { get; set; } = [];
+    public List<AnalysisRun> AnalysisRuns { get; set; } = [];
+    public List<AnalysisArtifact> Artifacts { get; set; } = [];
+    public List<TimelineEvent> Events { get; set; } = [];
+    public List<CaseEntity> Entities { get; set; } = [];
+    public List<CaseRelationship> Relationships { get; set; } = [];
+    public List<CaseIndicator> Indicators { get; set; } = [];
+    public List<CaseNote> Notes { get; set; } = [];
     public List<Finding> Findings { get; set; } = [];
     public FinalReport? Report { get; set; }
     public List<AuditEntry> AuditTrail { get; set; } = [];
