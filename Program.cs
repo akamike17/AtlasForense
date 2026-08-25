@@ -10,6 +10,7 @@ builder.Services.AddSingleton<IForensicCaseService, JsonForensicCaseService>();
 builder.Services.AddSingleton<IForensicReportBuilder, MarkdownForensicReportBuilder>();
 builder.Services.AddSingleton<IContentTransformationService, ContentTransformationService>();
 builder.Services.AddSingleton<IForensicAnalyzer, StaticTextAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, BinaryMetadataAnalyzer>();
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = 104_857_600);
 builder.Services.AddHealthChecks();
 builder.Services.AddRateLimiter(options =>
