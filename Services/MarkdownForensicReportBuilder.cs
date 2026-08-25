@@ -54,6 +54,16 @@ public sealed class MarkdownForensicReportBuilder : IForensicReportBuilder
             text.AppendLine($"| {indicator.Type} | {Cell(indicator.Value)} | {indicator.Confidence} | {Cell(string.Join(", ", indicator.EvidenceIds.Select(id => item.Evidence.FirstOrDefault(e => e.Id == id)?.Identifier ?? id.ToString())))} |");
         text.AppendLine();
 
+        text.AppendLine("### Capas decodificadas").AppendLine();
+        var decoded = item.Artifacts.Where(x => x.Kind == ArtifactKind.DecodedContent).OrderBy(x => x.CreatedAtUtc).ToList();
+        if (decoded.Count == 0) text.AppendLine("No se registraron capas codificadas reconocibles.");
+        foreach (var artifact in decoded)
+        {
+            var evidence = item.Evidence.FirstOrDefault(x => x.Id == artifact.EvidenceId)?.Identifier ?? artifact.EvidenceId.ToString();
+            text.AppendLine($"- **{Escape(artifact.Name)}** en {Escape(evidence)} — {Escape(artifact.Context)}");
+        }
+        text.AppendLine();
+
         text.AppendLine("## 7. Hallazgos").AppendLine();
         var number = 1;
         foreach (var finding in item.Findings.OrderByDescending(x => x.Severity).ThenBy(x => x.CreatedAtUtc))

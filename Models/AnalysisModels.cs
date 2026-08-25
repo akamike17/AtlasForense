@@ -1,6 +1,6 @@
 namespace AtlasForense.Models;
 
-public enum ArtifactKind { Metadata, Url, Domain, IpAddress, Email, FileHash, NetworkEndpoint, ScriptFunction, String, SecretReference, Capability }
+public enum ArtifactKind { Metadata, Url, Domain, IpAddress, Email, FileHash, NetworkEndpoint, ScriptFunction, String, SecretReference, Capability, DecodedContent }
 public enum ConfidenceLevel { Observed, Confirmed, Corroborated, Inferred }
 public enum IndicatorType { Url, Domain, IpAddress, Email, Hash, FileName, RegistryKey, Mutex, Other }
 

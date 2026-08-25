@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using AtlasForense.Models;
+using AtlasForense.Services;
 
 namespace AtlasForense.Forensics;
 
@@ -11,6 +12,9 @@ public sealed partial class StaticTextAnalyzer : IForensicAnalyzer
     private const int MaxValuesPerKind = 2_000;
     public string Id => "static-text-ioc";
     public string Version => "1.0.0";
+    private readonly IContentTransformationService _transformations;
+
+    public StaticTextAnalyzer(IContentTransformationService? transformations = null) => _transformations = transformations ?? new ContentTransformationService();
 
     public bool CanAnalyze(EvidenceItem evidence)
     {
@@ -28,6 +32,7 @@ public sealed partial class StaticTextAnalyzer : IForensicAnalyzer
         AddMatches(output, context.Evidence.Id, runId, ArtifactKind.Email, IndicatorType.Email, EmailRegex(), text, value => value.ToLowerInvariant());
         AddMatches(output, context.Evidence.Id, runId, ArtifactKind.IpAddress, IndicatorType.IpAddress, IpRegex(), text, NormalizeIp);
         AddMatches(output, context.Evidence.Id, runId, ArtifactKind.FileHash, IndicatorType.Hash, HashRegex(), text, value => value.ToLowerInvariant());
+        DecodeEmbeddedLayers(output, context.Evidence.Id, runId, text);
 
         foreach (var url in output.Artifacts.Where(x => x.Kind == ArtifactKind.Url).ToList())
         {
@@ -44,6 +49,28 @@ public sealed partial class StaticTextAnalyzer : IForensicAnalyzer
 
         output.Summary = $"Análisis estático: {output.Artifacts.Count} artefactos y {output.Indicators.Count} indicadores extraídos; muestra no ejecutada y red no utilizada.";
         return output;
+    }
+
+    private void DecodeEmbeddedLayers(AnalyzerOutput output, Guid evidenceId, Guid runId, string text)
+    {
+        foreach (Match match in EncodedTokenRegex().Matches(text).Cast<Match>().Take(200))
+        {
+            var layers = _transformations.DetectAndDecode(match.Value, 4);
+            foreach (var layer in layers)
+            {
+                if (output.Artifacts.Any(x => x.Kind == ArtifactKind.DecodedContent && x.Value == layer.Output)) continue;
+                output.Artifacts.Add(new AnalysisArtifact
+                {
+                    EvidenceId = evidenceId, AnalysisRunId = runId, Kind = ArtifactKind.DecodedContent,
+                    Name = $"Capa {layer.Depth}: {layer.Algorithm}", Value = layer.Output,
+                    Context = $"Entrada {layer.InputSha256}; salida {layer.OutputSha256}; legibilidad {layer.PrintableRatio:P0}",
+                    Offset = match.Index, Confidence = ConfidenceLevel.Observed
+                });
+                AddMatches(output, evidenceId, runId, ArtifactKind.Url, IndicatorType.Url, UrlRegex(), layer.Output, value => value.TrimEnd('.', ',', ';', ')', ']', '}', '\'', '"'));
+                AddMatches(output, evidenceId, runId, ArtifactKind.Email, IndicatorType.Email, EmailRegex(), layer.Output, value => value.ToLowerInvariant());
+                AddMatches(output, evidenceId, runId, ArtifactKind.IpAddress, IndicatorType.IpAddress, IpRegex(), layer.Output, NormalizeIp);
+            }
+        }
     }
 
     private static async Task<string> ReadBoundedText(string path, CancellationToken token)
@@ -118,4 +145,5 @@ public sealed partial class StaticTextAnalyzer : IForensicAnalyzer
     [GeneratedRegex(@"(?<![\d.])(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}(?![\d.])", RegexOptions.CultureInvariant)] private static partial Regex IpRegex();
     [GeneratedRegex(@"\b(?:[a-fA-F0-9]{32}|[a-fA-F0-9]{40}|[a-fA-F0-9]{64})\b", RegexOptions.CultureInvariant)] private static partial Regex HashRegex();
     [GeneratedRegex(@"(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(", RegexOptions.CultureInvariant)] private static partial Regex FunctionRegex();
+    [GeneratedRegex(@"(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/=_-]{24,4096}(?![A-Za-z0-9+/=_-])", RegexOptions.CultureInvariant)] private static partial Regex EncodedTokenRegex();
 }

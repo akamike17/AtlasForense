@@ -1,0 +1,44 @@
+@model TransformationLabViewModel
+@{ ViewData["Title"] = "Laboratorio de transformaciones"; }
+
+<header class="case-header">
+    <div><span class="eyebrow">Laboratorio controlado</span><h1>Ofuscación y desofuscación reproducible</h1><p>Transforma o identifica capas sin ejecutar código, abrir conexiones ni modificar evidencia.</p></div>
+</header>
+
+<section class="panel stage-panel current">
+    <div class="panel-heading"><div><span class="eyebrow">Receta verificable</span><h2>Transformación manual</h2></div><span class="check">Máximo 1 MiB</span></div>
+    <form asp-action="Transform" method="post" class="form-grid compact">
+        <label class="field span-2">Contenido<textarea asp-for="Input.Input" class="form-control" rows="10" required spellcheck="false"></textarea><span asp-validation-for="Input.Input"></span></label>
+        <label class="field">Operación<select asp-for="Input.Direction" asp-items="Html.GetEnumSelectList<TransformationDirection>()" class="form-control"></select></label>
+        <label class="field">Algoritmo<select asp-for="Input.Algorithm" asp-items="Html.GetEnumSelectList<TransformationAlgorithm>()" class="form-control"></select></label>
+        <label class="field span-2">Parámetro opcional<input asp-for="Input.Parameter" class="form-control" placeholder="ROT: 1–25 · bits: 1–7 · XOR: clave UTF-8"/></label>
+        <button class="btn btn-primary span-2">Aplicar y calcular hashes</button>
+    </form>
+    <form asp-action="Detect" method="post" class="inline-action">
+        <input type="hidden" name="Input" value="@Model.Input.Input"/>
+        <button class="btn btn-outline-light">Detectar y desenvolver capas automáticamente</button>
+    </form>
+</section>
+
+@if (Model.Result is not null)
+{
+    <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Resultado</span><h2>@Model.Result.Recipe</h2></div><span class="check">@(Model.Result.Success ? "Correcto" : "Rechazado")</span></div>
+    @if (Model.Result.Success)
+    {
+        <textarea class="form-control" rows="12" readonly spellcheck="false">@Model.Result.Output</textarea>
+        <div class="metrics"><div><b>@Model.Result.InputBytes</b><span>bytes entrada</span></div><div><b>@Model.Result.OutputBytes</b><span>bytes salida</span></div></div>
+        <p><strong>Entrada:</strong> <code class="hash">@Model.Result.InputSha256</code></p><p><strong>Salida:</strong> <code class="hash">@Model.Result.OutputSha256</code></p>
+    }
+    else { <p class="alert alert-danger">@Model.Result.Error</p> }
+    </section>
+}
+
+@if (Model.DetectedLayers.Count > 0)
+{
+    <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Desenvoltura automática</span><h2>@Model.DetectedLayers.Count capas verificadas</h2></div></div>
+    @foreach (var layer in Model.DetectedLayers)
+    {
+        <article class="finding"><h3>Capa @layer.Depth · @layer.Algorithm</h3><p>Legibilidad: @layer.PrintableRatio.ToString("P0")</p><textarea class="form-control" rows="6" readonly spellcheck="false">@layer.Output</textarea><code class="hash">@layer.OutputSha256</code></article>
+    }
+    </section>
+}

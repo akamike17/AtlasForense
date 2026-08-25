@@ -187,6 +187,22 @@ public sealed class ForensicCaseServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task StaticAnalysis_UnwrapsEncodedIocAndPreservesEveryLayer()
+    {
+        var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes("https://hidden.example.test/gate.php"));
+        var item = await CreateCase();
+        await Authorize(item.Id);
+        await Acquire(item.Id, "encoded.js", $"const endpoint = '{encoded}';");
+        await _service.StartAnalysisAsync(item.Id, "Analyst", default);
+
+        var result = await _service.AnalyzeEvidenceAsync(item.Id, item.Evidence.Single().Id, "Analyst", default);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Contains(item.Artifacts, x => x.Kind == ArtifactKind.DecodedContent && x.Value.Contains("hidden.example.test"));
+        Assert.Contains(item.Indicators, x => x.Type == IndicatorType.Url && x.Value == "https://hidden.example.test/gate.php");
+    }
+
+    [Fact]
     public async Task MarkdownReport_ContainsEvidenceAnalysisFindingsAndVerifiableManifest()
     {
         var item = await CreateCase();
