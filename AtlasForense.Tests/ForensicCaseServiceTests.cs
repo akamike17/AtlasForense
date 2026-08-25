@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using AtlasForense.Models;
 using AtlasForense.Services;
 using AtlasForense.Forensics;
@@ -157,8 +158,9 @@ public sealed class ForensicCaseServiceTests : IDisposable
         var created = await Task.WhenAll(tasks);
 
         Assert.Equal(20, created.Select(x => x.Folio).Distinct().Count());
-        var database = await File.ReadAllTextAsync(Path.Combine(_root, "App_Data", "cases.json"));
-        Assert.Contains(created[0].Folio, database);
+        var database = new FileInfo(Path.Combine(_root, "App_Data", "atlas-forense.db"));
+        Assert.True(database.Exists);
+        Assert.True(database.Length > 0);
         Assert.Equal(20, _service.GetAll().Count);
     }
 
@@ -251,6 +253,61 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Assert.Contains("https://evidence.example.test/api", document.Content);
         Assert.Contains("## 7. Hallazgos", document.Content);
         Assert.Contains("Cadena de auditoría: **VÁLIDA**", document.Content);
+    }
+
+    [Fact]
+    public async Task BackupRestore_ReplacesDisposableDatabaseAndVerifiesIntegrity()
+    {
+        var original = await CreateCase();
+        var backup = await _service.CreateBackupAsync(default);
+        Assert.True(backup.Success, backup.Message);
+        Assert.Equal(64, backup.Sha256.Length);
+        Assert.Equal(1, backup.CaseCount);
+
+        await _service.CreateAsync(new CreateCaseInput { Title = "Disposable", RequestingOrganization = "Lab", LeadExaminer = "Examiner", Scope = "Restore test" }, default);
+        Assert.Equal(2, _service.GetAll().Count);
+
+        var restored = await _service.RestoreBackupAsync(backup.FileName, default);
+
+        Assert.True(restored.Success, restored.Message);
+        Assert.Equal(1, restored.CaseCount);
+        Assert.NotNull(_service.Get(original.Id));
+        Assert.True((await _service.VerifyAsync(default)).Success);
+    }
+
+    [Fact]
+    public async Task IntegrityVerification_DetectsModifiedAuditMetadata()
+    {
+        var item = await CreateCase();
+        item.AuditTrail.Single().Detail = "modified";
+
+        var result = await _service.VerifyAsync(default);
+
+        Assert.False(result.Success);
+        Assert.Contains("auditoría inválida", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Startup_ImportsLegacyJsonWithoutDeletingIt()
+    {
+        var importRoot = Path.Combine(Path.GetTempPath(), $"atlas-forense-import-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(importRoot, "App_Data"));
+        try
+        {
+            var legacy = new ForensicCase { Folio = "AF-2025-00001", Title = "Legacy", RequestingOrganization = "Lab", LeadExaminer = "Examiner", Scope = "Preserve" };
+            var legacyPath = Path.Combine(importRoot, "App_Data", "cases.json");
+            await File.WriteAllTextAsync(legacyPath, JsonSerializer.Serialize(new[] { legacy }, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+
+            var imported = new JsonForensicCaseService(new TestEnvironment(importRoot));
+
+            Assert.NotNull(imported.Get(legacy.Id));
+            Assert.True(File.Exists(legacyPath));
+            Assert.True(File.Exists(Path.Combine(importRoot, "App_Data", "atlas-forense.db")));
+        }
+        finally
+        {
+            if (Directory.Exists(importRoot)) Directory.Delete(importRoot, true);
+        }
     }
 
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);

@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews(options => options.MaxModelValidationErrors = 100);
 builder.Services.AddSingleton<IForensicCaseService, JsonForensicCaseService>();
+builder.Services.AddSingleton<IForensicDataMaintenance>(provider =>
+    (JsonForensicCaseService)provider.GetRequiredService<IForensicCaseService>());
 builder.Services.AddSingleton<IForensicReportBuilder, MarkdownForensicReportBuilder>();
 builder.Services.AddSingleton<IContentTransformationService, ContentTransformationService>();
 builder.Services.AddSingleton<IForensicAnalyzer, StaticTextAnalyzer>();
@@ -23,6 +25,42 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+var maintenanceCommand = args.FirstOrDefault(argument => argument.StartsWith("--data-", StringComparison.OrdinalIgnoreCase));
+if (maintenanceCommand is not null)
+{
+    var maintenance = app.Services.GetRequiredService<IForensicDataMaintenance>();
+    switch (maintenanceCommand.ToLowerInvariant())
+    {
+        case "--data-verify":
+        {
+            var result = await maintenance.VerifyAsync(CancellationToken.None);
+            Console.WriteLine($"{result.Message} Expedientes: {result.CaseCount}.");
+            Environment.ExitCode = result.Success ? 0 : 2;
+            return;
+        }
+        case "--data-backup":
+        {
+            var result = await maintenance.CreateBackupAsync(CancellationToken.None);
+            Console.WriteLine($"{result.Message} Archivo: {result.FileName}; SHA-256: {result.Sha256}; expedientes: {result.CaseCount}.");
+            Environment.ExitCode = result.Success ? 0 : 2;
+            return;
+        }
+        case "--data-restore":
+        {
+            var index = Array.FindIndex(args, argument => argument.Equals(maintenanceCommand, StringComparison.OrdinalIgnoreCase));
+            var fileName = index >= 0 && index + 1 < args.Length ? args[index + 1] : string.Empty;
+            var result = await maintenance.RestoreBackupAsync(fileName, CancellationToken.None);
+            Console.WriteLine($"{result.Message} Expedientes: {result.CaseCount}.");
+            Environment.ExitCode = result.Success ? 0 : 2;
+            return;
+        }
+        default:
+            Console.Error.WriteLine("Comando desconocido. Use --data-verify, --data-backup o --data-restore <archivo>.");
+            Environment.ExitCode = 2;
+            return;
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

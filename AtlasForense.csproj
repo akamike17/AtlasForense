@@ -4,10 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <DefaultItemExcludes>$(DefaultItemExcludes);AtlasForense.Tests/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="AtlasForense.Tests/**/*.cs" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.22" />
+    <PackageReference Include="SQLitePCLRaw.provider.sqlite3" Version="2.1.11" />
+    <PackageReference Include="SQLitePCLRaw.provider.winsqlite3" Version="2.1.11" />
   </ItemGroup>
 
 </Project>

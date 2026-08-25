@@ -3,31 +3,140 @@ using System.Text;
 using System.Text.Json;
 using AtlasForense.Models;
 using AtlasForense.Forensics;
+using Microsoft.Data.Sqlite;
 
 namespace AtlasForense.Services;
 
-public sealed class JsonForensicCaseService : IForensicCaseService
+public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDataMaintenance
 {
     private const long MaxEvidenceBytes = 100 * 1024 * 1024;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly string _legacyDatabasePath;
     private readonly string _databasePath;
+    private readonly string _backupPath;
     private readonly string _evidencePath;
     private readonly IReadOnlyList<IForensicAnalyzer> _analyzers;
+    private readonly Dictionary<Guid, long> _rowVersions = [];
     private List<ForensicCase> _cases;
+
+    static JsonForensicCaseService()
+    {
+        SQLitePCL.raw.SetProvider(OperatingSystem.IsWindows()
+            ? new SQLitePCL.SQLite3Provider_winsqlite3()
+            : new SQLitePCL.SQLite3Provider_sqlite3());
+        SQLitePCL.raw.FreezeProvider();
+    }
 
     public JsonForensicCaseService(IWebHostEnvironment environment, IEnumerable<IForensicAnalyzer>? analyzers = null)
     {
         var dataPath = Path.Combine(environment.ContentRootPath, "App_Data");
         _evidencePath = Path.Combine(dataPath, "Evidence");
-        _databasePath = Path.Combine(dataPath, "cases.json");
+        _legacyDatabasePath = Path.Combine(dataPath, "cases.json");
+        _databasePath = Path.Combine(dataPath, "atlas-forense.db");
+        _backupPath = Path.Combine(dataPath, "Backups");
         _analyzers = analyzers?.ToList() ?? [];
+        Directory.CreateDirectory(dataPath);
         Directory.CreateDirectory(_evidencePath);
+        Directory.CreateDirectory(_backupPath);
+        InitializeDatabase();
         _cases = Load();
+        ImportLegacyDataIfNeeded();
     }
 
     public IReadOnlyList<ForensicCase> GetAll() => _cases.OrderByDescending(x => x.CreatedAtUtc).ToList();
     public ForensicCase? Get(Guid id) => _cases.FirstOrDefault(x => x.Id == id);
+
+    public async Task<DataIntegrityResult> VerifyAsync(CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = OpenConnection();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA quick_check;";
+            var databaseResult = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken));
+            if (!string.Equals(databaseResult, "ok", StringComparison.OrdinalIgnoreCase))
+                return new(false, $"SQLite informó: {databaseResult}", _cases.Count);
+            foreach (var item in _cases)
+            {
+                var previous = "GENESIS";
+                long expectedSequence = 1;
+                foreach (var entry in item.AuditTrail.OrderBy(x => x.Sequence))
+                {
+                    var expectedHash = HashText($"{item.Id}|{entry.Sequence}|{entry.OccurredAtUtc:O}|{entry.Actor}|{entry.Action}|{entry.Detail}|{previous}");
+                    if (entry.Sequence != expectedSequence || entry.PreviousHash != previous || !entry.EntryHash.Equals(expectedHash, StringComparison.OrdinalIgnoreCase))
+                        return new(false, $"Cadena de auditoría inválida en {item.Folio}, secuencia {entry.Sequence}.", _cases.Count);
+                    previous = entry.EntryHash;
+                    expectedSequence++;
+                }
+            }
+            return new(true, "Base SQLite y cadenas de auditoría verificadas.", _cases.Count);
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<BackupResult> CreateBackupAsync(CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var fileName = $"atlas-forense-{DateTime.UtcNow:yyyyMMddTHHmmssfffZ}-{Guid.NewGuid():N}.db";
+            var path = Path.Combine(_backupPath, fileName);
+            var valid = false;
+            await using (var source = OpenConnection())
+            await using (var destination = new SqliteConnection($"Data Source={path};Mode=ReadWriteCreate;Pooling=False"))
+            {
+                await destination.OpenAsync(cancellationToken);
+                source.BackupDatabase(destination);
+                await using var check = destination.CreateCommand();
+                check.CommandText = "PRAGMA quick_check;";
+                valid = string.Equals(Convert.ToString(await check.ExecuteScalarAsync(cancellationToken)), "ok", StringComparison.OrdinalIgnoreCase);
+            }
+            if (!valid)
+            {
+                File.Delete(path);
+                return new(false, string.Empty, string.Empty, _cases.Count, "La copia no superó la verificación de integridad.");
+            }
+            var hash = await HashFileAsync(path, cancellationToken);
+            return new(true, fileName, hash, _cases.Count, "Respaldo SQLite creado y verificado.");
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<DataIntegrityResult> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(backupFileName) || Path.GetFileName(backupFileName) != backupFileName)
+            return new(false, "Nombre de respaldo inválido.", _cases.Count);
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            var sourcePath = Path.Combine(_backupPath, backupFileName);
+            if (!File.Exists(sourcePath)) return new(false, "Respaldo no encontrado.", _cases.Count);
+            var restorePath = _databasePath + ".restore";
+            try
+            {
+                await using (var source = new SqliteConnection($"Data Source={sourcePath};Mode=ReadOnly;Pooling=False"))
+                await using (var destination = new SqliteConnection($"Data Source={restorePath};Mode=ReadWriteCreate;Pooling=False"))
+                {
+                    await source.OpenAsync(cancellationToken);
+                    await destination.OpenAsync(cancellationToken);
+                    await using var check = source.CreateCommand();
+                    check.CommandText = "PRAGMA quick_check;";
+                    if (!string.Equals(Convert.ToString(await check.ExecuteScalarAsync(cancellationToken)), "ok", StringComparison.OrdinalIgnoreCase))
+                        return new(false, "El respaldo está dañado y no fue restaurado.", _cases.Count);
+                    source.BackupDatabase(destination);
+                }
+                File.Move(restorePath, _databasePath, true);
+                _rowVersions.Clear();
+                _cases = Load();
+                return new(true, "Respaldo restaurado y recargado.", _cases.Count);
+            }
+            finally { if (File.Exists(restorePath)) File.Delete(restorePath); }
+        }
+        finally { _gate.Release(); }
+    }
 
     public async Task<ForensicCase> CreateAsync(CreateCaseInput input, CancellationToken cancellationToken)
     {
@@ -257,18 +366,184 @@ public sealed class JsonForensicCaseService : IForensicCaseService
         }
     }
 
+    private void InitializeDatabase()
+    {
+        using var connection = OpenConnection();
+        using var transaction = connection.BeginTransaction();
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            CREATE TABLE IF NOT EXISTS SchemaMigrations (
+                Version INTEGER NOT NULL PRIMARY KEY,
+                AppliedAtUtc TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS Cases (
+                Id TEXT NOT NULL PRIMARY KEY,
+                Folio TEXT NOT NULL UNIQUE,
+                Status INTEGER NOT NULL,
+                CreatedAtUtc TEXT NOT NULL,
+                DocumentJson TEXT NOT NULL,
+                RowVersion INTEGER NOT NULL DEFAULT 1 CHECK (RowVersion > 0)
+            );
+            CREATE TABLE IF NOT EXISTS EvidenceItems (
+                Id TEXT NOT NULL PRIMARY KEY,
+                CaseId TEXT NOT NULL,
+                Identifier TEXT NOT NULL,
+                Sha256 TEXT NOT NULL CHECK (length(Sha256) = 64),
+                StoredFileName TEXT NOT NULL,
+                Classification INTEGER NOT NULL DEFAULT 0,
+                UNIQUE (CaseId, Identifier),
+                FOREIGN KEY (CaseId) REFERENCES Cases(Id) ON DELETE RESTRICT
+            );
+            CREATE TABLE IF NOT EXISTS AuditEntries (
+                CaseId TEXT NOT NULL,
+                Sequence INTEGER NOT NULL CHECK (Sequence > 0),
+                EntryHash TEXT NOT NULL CHECK (length(EntryHash) = 64),
+                PreviousHash TEXT NOT NULL,
+                OccurredAtUtc TEXT NOT NULL,
+                PRIMARY KEY (CaseId, Sequence),
+                FOREIGN KEY (CaseId) REFERENCES Cases(Id) ON DELETE RESTRICT
+            );
+            INSERT OR IGNORE INTO SchemaMigrations (Version, AppliedAtUtc)
+            VALUES (1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
+            """;
+        command.ExecuteNonQuery();
+        transaction.Commit();
+    }
+
     private List<ForensicCase> Load()
     {
-        if (!File.Exists(_databasePath)) return [];
-        try { return JsonSerializer.Deserialize<List<ForensicCase>>(File.ReadAllText(_databasePath), JsonOptions) ?? []; }
-        catch (JsonException) { return []; }
+        var result = new List<ForensicCase>();
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Id, DocumentJson, RowVersion FROM Cases ORDER BY CreatedAtUtc;";
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            var item = JsonSerializer.Deserialize<ForensicCase>(reader.GetString(1), JsonOptions);
+            if (item is null) throw new InvalidDataException($"El expediente {reader.GetString(0)} no puede deserializarse.");
+            result.Add(item);
+            _rowVersions[item.Id] = reader.GetInt64(2);
+        }
+        return result;
+    }
+
+    private void ImportLegacyDataIfNeeded()
+    {
+        if (_cases.Count != 0 || !File.Exists(_legacyDatabasePath)) return;
+        List<ForensicCase> legacy;
+        try
+        {
+            legacy = JsonSerializer.Deserialize<List<ForensicCase>>(File.ReadAllText(_legacyDatabasePath), JsonOptions) ?? [];
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidDataException("El archivo cases.json existente no es válido; no se modificó ni importó.", exception);
+        }
+        if (legacy.Count == 0) return;
+        _cases = legacy;
+        SaveAsync(CancellationToken.None).GetAwaiter().GetResult();
     }
 
     private async Task SaveAsync(CancellationToken token)
     {
-        var temp = _databasePath + ".tmp";
-        await File.WriteAllTextAsync(temp, JsonSerializer.Serialize(_cases, JsonOptions), token);
-        File.Move(temp, _databasePath, true);
+        await using var connection = OpenConnection();
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(token);
+        foreach (var item in _cases)
+        {
+            var json = JsonSerializer.Serialize(item, JsonOptions);
+            if (_rowVersions.TryGetValue(item.Id, out var version))
+            {
+                await using var update = connection.CreateCommand();
+                update.Transaction = transaction;
+                update.CommandText = """
+                    UPDATE Cases SET Folio = $folio, Status = $status, CreatedAtUtc = $created,
+                        DocumentJson = $json, RowVersion = RowVersion + 1
+                    WHERE Id = $id AND RowVersion = $version;
+                    """;
+                AddCaseParameters(update, item, json);
+                update.Parameters.AddWithValue("$version", version);
+                if (await update.ExecuteNonQueryAsync(token) != 1)
+                    throw new InvalidOperationException($"Conflicto de concurrencia al guardar el expediente {item.Folio}.");
+                _rowVersions[item.Id] = version + 1;
+            }
+            else
+            {
+                await using var insert = connection.CreateCommand();
+                insert.Transaction = transaction;
+                insert.CommandText = """
+                    INSERT INTO Cases (Id, Folio, Status, CreatedAtUtc, DocumentJson, RowVersion)
+                    VALUES ($id, $folio, $status, $created, $json, 1);
+                    """;
+                AddCaseParameters(insert, item, json);
+                await insert.ExecuteNonQueryAsync(token);
+                _rowVersions[item.Id] = 1;
+            }
+
+            await ReplaceIntegrityRowsAsync(connection, transaction, item, token);
+        }
+        await transaction.CommitAsync(token);
+    }
+
+    private SqliteConnection OpenConnection()
+    {
+        var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = _databasePath,
+            Mode = SqliteOpenMode.ReadWriteCreate,
+            Cache = SqliteCacheMode.Private,
+            Pooling = false
+        }.ToString());
+        connection.Open();
+        using var pragma = connection.CreateCommand();
+        pragma.CommandText = "PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;";
+        pragma.ExecuteNonQuery();
+        return connection;
+    }
+
+    private static void AddCaseParameters(SqliteCommand command, ForensicCase item, string json)
+    {
+        command.Parameters.AddWithValue("$id", item.Id.ToString("D"));
+        command.Parameters.AddWithValue("$folio", item.Folio);
+        command.Parameters.AddWithValue("$status", (int)item.Status);
+        command.Parameters.AddWithValue("$created", item.CreatedAtUtc.ToUniversalTime().ToString("O"));
+        command.Parameters.AddWithValue("$json", json);
+    }
+
+    private static async Task ReplaceIntegrityRowsAsync(SqliteConnection connection, SqliteTransaction transaction, ForensicCase item, CancellationToken token)
+    {
+        foreach (var table in new[] { "EvidenceItems", "AuditEntries" })
+        {
+            await using var delete = connection.CreateCommand();
+            delete.Transaction = transaction;
+            delete.CommandText = $"DELETE FROM {table} WHERE CaseId = $caseId;";
+            delete.Parameters.AddWithValue("$caseId", item.Id.ToString("D"));
+            await delete.ExecuteNonQueryAsync(token);
+        }
+        foreach (var evidence in item.Evidence)
+        {
+            await using var insert = connection.CreateCommand();
+            insert.Transaction = transaction;
+            insert.CommandText = "INSERT INTO EvidenceItems (Id, CaseId, Identifier, Sha256, StoredFileName) VALUES ($id, $caseId, $identifier, $sha256, $stored);";
+            insert.Parameters.AddWithValue("$id", evidence.Id.ToString("D"));
+            insert.Parameters.AddWithValue("$caseId", item.Id.ToString("D"));
+            insert.Parameters.AddWithValue("$identifier", evidence.Identifier);
+            insert.Parameters.AddWithValue("$sha256", evidence.Sha256);
+            insert.Parameters.AddWithValue("$stored", evidence.StoredFileName);
+            await insert.ExecuteNonQueryAsync(token);
+        }
+        foreach (var audit in item.AuditTrail)
+        {
+            await using var insert = connection.CreateCommand();
+            insert.Transaction = transaction;
+            insert.CommandText = "INSERT INTO AuditEntries (CaseId, Sequence, EntryHash, PreviousHash, OccurredAtUtc) VALUES ($caseId, $sequence, $hash, $previous, $occurred);";
+            insert.Parameters.AddWithValue("$caseId", item.Id.ToString("D"));
+            insert.Parameters.AddWithValue("$sequence", audit.Sequence);
+            insert.Parameters.AddWithValue("$hash", audit.EntryHash);
+            insert.Parameters.AddWithValue("$previous", audit.PreviousHash);
+            insert.Parameters.AddWithValue("$occurred", audit.OccurredAtUtc.ToUniversalTime().ToString("O"));
+            await insert.ExecuteNonQueryAsync(token);
+        }
     }
 
     private static async Task<string> HashFileAsync(string path, CancellationToken token)
