@@ -21,3 +21,5 @@ jobs:
         run: dotnet restore AtlasForense.slnx
       - name: Build
         run: dotnet build AtlasForense.slnx --configuration Release --no-restore
+      - name: Test forensic workflow
+        run: dotnet test AtlasForense.Tests/AtlasForense.Tests.csproj --configuration Release --collect:"XPlat Code Coverage" --logger "trx;LogFileName=atlas-forense-tests.trx"
