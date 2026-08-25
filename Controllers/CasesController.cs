@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AtlasForense.Controllers;
 
 [AutoValidateAntiforgeryToken]
-public sealed class CasesController(IForensicCaseService service) : Controller
+public sealed class CasesController(IForensicCaseService service, IForensicReportBuilder reportBuilder) : Controller
 {
     [HttpGet] public IActionResult Index() => View(service.GetAll());
     [HttpGet] public IActionResult Create() => View(new CreateCaseInput());
@@ -60,6 +60,16 @@ public sealed class CasesController(IForensicCaseService service) : Controller
     {
         var item = service.Get(id);
         return item?.Report is null ? NotFound() : View(item);
+    }
+
+    [HttpGet]
+    public IActionResult ExportMarkdown(Guid id)
+    {
+        var item = service.Get(id);
+        if (item?.Report is null) return NotFound();
+        var document = reportBuilder.BuildMarkdown(item);
+        Response.Headers.Append("X-Content-SHA256", document.Sha256);
+        return File(System.Text.Encoding.UTF8.GetBytes(document.Content), "text/markdown; charset=utf-8", document.FileName);
     }
 
     private async Task<IActionResult> Execute(Guid id, Func<Task<OperationResult>> operation)

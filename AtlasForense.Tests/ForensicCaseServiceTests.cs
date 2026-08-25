@@ -186,6 +186,29 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Assert.Contains(item.AuditTrail, x => x.Action == "INTEGRITY_FAILURE");
     }
 
+    [Fact]
+    public async Task MarkdownReport_ContainsEvidenceAnalysisFindingsAndVerifiableManifest()
+    {
+        var item = await CreateCase();
+        await Authorize(item.Id);
+        await Acquire(item.Id, "sample.js", "function beacon(){ fetch('https://evidence.example.test/api'); }");
+        await _service.StartAnalysisAsync(item.Id, "Analyst", default);
+        await _service.AnalyzeEvidenceAsync(item.Id, item.Evidence.Single().Id, "Analyst", default);
+        await AddFinding(item.Id);
+        await PrepareReport(item.Id);
+
+        var document = new MarkdownForensicReportBuilder().BuildMarkdown(item);
+
+        Assert.EndsWith("-informe-forense.md", document.FileName);
+        Assert.Equal(64, document.Sha256.Length);
+        Assert.Contains("## 4. Inventario y preservación de evidencia", document.Content);
+        Assert.Contains(item.Evidence.Single().Sha256, document.Content);
+        Assert.Contains("static-text-ioc", document.Content);
+        Assert.Contains("https://evidence.example.test/api", document.Content);
+        Assert.Contains("## 7. Hallazgos", document.Content);
+        Assert.Contains("Cadena de auditoría: **VÁLIDA**", document.Content);
+    }
+
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
     private Task<OperationResult> Authorize(Guid id) => _service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = id, Authority = "Test authority", Reference = "AUTH-001", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
     private Task<OperationResult> Acquire(Guid id, string name, string content) => Acquire(id, name, Encoding.UTF8.GetBytes(content));
