@@ -30,13 +30,41 @@ public sealed class ForensicCaseServiceTests : IDisposable
         var analysis = await _service.StartAnalysisAsync(item.Id, "Analyst A", default);
         var finding = await AddFinding(item.Id);
         var report = await PrepareReport(item.Id);
+        var review = await _service.ReviewReportAsync(item.Id, "Supervisor", true, "Validated", default);
         var close = await _service.CloseAsync(item.Id, "Supervisor", default);
 
-        Assert.All(new[] { authorization, acquisition, analysis, finding, report, close }, result => Assert.True(result.Success, result.Message));
+        Assert.All(new[] { authorization, acquisition, analysis, finding, report, review, close }, result => Assert.True(result.Success, result.Message));
         var completed = Assert.IsType<ForensicCase>(_service.Get(item.Id));
         Assert.Equal(CaseStatus.Closed, completed.Status);
         Assert.All(completed.Evidence, evidence => Assert.Equal(EvidenceStatus.Sealed, evidence.Status));
         Assert.False(string.IsNullOrWhiteSpace(completed.Report?.IntegrityHash));
+    }
+
+    [Fact]
+    public async Task Report_RequiresIndependentApprovalBeforeClosure()
+    {
+        var item = await CreateCase(); await Authorize(item.Id); await Acquire(item.Id, "evidence.bin", "known");
+        await _service.StartAnalysisAsync(item.Id, "Analyst A", default); await AddFinding(item.Id); await PrepareReport(item.Id);
+
+        Assert.False((await _service.CloseAsync(item.Id, "Supervisor", default)).Success);
+        Assert.False((await _service.ReviewReportAsync(item.Id, "Analyst A", true, "Self review", default)).Success);
+        Assert.True((await _service.ReviewReportAsync(item.Id, "Supervisor", true, "Independent review", default)).Success);
+        Assert.True((await _service.CloseAsync(item.Id, "Custodian", default)).Success);
+        Assert.Contains(item.AuditTrail, x => x.Action == "REPORT_APPROVED");
+    }
+
+    [Fact]
+    public async Task RejectedReport_ReturnsCaseToAnalysis()
+    {
+        var item = await CreateCase(); await Authorize(item.Id); await Acquire(item.Id, "evidence.bin", "known");
+        await _service.StartAnalysisAsync(item.Id, "Analyst A", default); await AddFinding(item.Id); await PrepareReport(item.Id);
+
+        var result = await _service.ReviewReportAsync(item.Id, "Reviewer B", false, "Clarify timeline", default);
+
+        Assert.True(result.Success);
+        Assert.Equal(CaseStatus.Analyzing, item.Status);
+        Assert.False(item.ReportReview!.Approved);
+        Assert.False((await _service.CloseAsync(item.Id, "Supervisor", default)).Success);
     }
 
     [Fact]

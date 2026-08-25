@@ -187,14 +187,28 @@ public sealed class JsonForensicCaseService : IForensicCaseService
         var report = new FinalReport { ExecutiveSummary = input.ExecutiveSummary.Trim(), Methodology = input.Methodology.Trim(), Conclusions = input.Conclusions.Trim(), Recommendations = input.Recommendations.Trim(), PreparedBy = input.PreparedBy.Trim(), PreparedAtUtc = DateTimeOffset.UtcNow };
         report.IntegrityHash = HashText($"{item.Folio}|{report.ExecutiveSummary}|{report.Methodology}|{report.Conclusions}|{report.Recommendations}|{report.PreparedBy}|{report.PreparedAtUtc:O}");
         item.Report = report;
+        item.ReportReview = null;
         item.Status = CaseStatus.Reporting;
         AppendAudit(item, input.PreparedBy, "REPORT_PREPARED", $"Informe sellado: {report.IntegrityHash}");
         return OperationResult.Ok("Etapa 3 completada. Informe generado y sellado.");
     });
 
+    public Task<OperationResult> ReviewReportAsync(Guid id, string reviewer, bool approve, string notes, CancellationToken token) => MutateAsync(id, token, item =>
+    {
+        if (item.Status != CaseStatus.Reporting || item.Report is null) return OperationResult.Fail("Solo puede revisarse un informe preparado y sellado.");
+        reviewer = reviewer.Trim();
+        if (string.IsNullOrWhiteSpace(reviewer)) return OperationResult.Fail("Identifica a la persona revisora.");
+        if (reviewer.Equals(item.Report.PreparedBy, StringComparison.OrdinalIgnoreCase)) return OperationResult.Fail("La revisión debe realizarla una persona distinta de quien preparó el informe.");
+        item.ReportReview = new ReportReview { ReviewedBy = reviewer, ReviewedAtUtc = DateTimeOffset.UtcNow, Approved = approve, Notes = notes.Trim(), ReviewedReportHash = item.Report.IntegrityHash };
+        AppendAudit(item, reviewer, approve ? "REPORT_APPROVED" : "REPORT_REJECTED", $"Informe {item.Report.IntegrityHash}; {notes.Trim()}");
+        if (!approve) item.Status = CaseStatus.Analyzing;
+        return OperationResult.Ok(approve ? "Informe aprobado por revisión independiente." : "Informe devuelto al análisis con observaciones.");
+    });
+
     public Task<OperationResult> CloseAsync(Guid id, string actor, CancellationToken token) => MutateAsync(id, token, item =>
     {
-        if (item.Status != CaseStatus.Reporting || item.Report is null) return OperationResult.Fail("Solo un expediente con informe sellado puede cerrarse.");
+        if (item.Status != CaseStatus.Reporting || item.Report is null || item.ReportReview is null || !item.ReportReview.Approved || item.ReportReview.ReviewedReportHash != item.Report.IntegrityHash)
+            return OperationResult.Fail("El cierre requiere un informe sellado y aprobado por revisión independiente.");
         item.Status = CaseStatus.Closed;
         item.Evidence.ForEach(x => x.Status = EvidenceStatus.Sealed);
         AppendAudit(item, actor, "CASE_CLOSED", "Expediente e inventario de evidencia sellados.");

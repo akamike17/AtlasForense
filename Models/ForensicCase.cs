@@ -27,6 +27,7 @@ public sealed class ForensicCase
     public List<CaseNote> Notes { get; set; } = [];
     public List<Finding> Findings { get; set; } = [];
     public FinalReport? Report { get; set; }
+    public ReportReview? ReportReview { get; set; }
     public List<AuditEntry> AuditTrail { get; set; } = [];
 }
 
@@ -89,6 +90,15 @@ public sealed class FinalReport
     public string PreparedBy { get; set; } = string.Empty;
     public DateTimeOffset PreparedAtUtc { get; set; }
     public string IntegrityHash { get; set; } = string.Empty;
+}
+
+public sealed class ReportReview
+{
+    public string ReviewedBy { get; set; } = string.Empty;
+    public DateTimeOffset ReviewedAtUtc { get; set; }
+    public bool Approved { get; set; }
+    public string Notes { get; set; } = string.Empty;
+    public string ReviewedReportHash { get; set; } = string.Empty;
 }
 
 public sealed class AuditEntry

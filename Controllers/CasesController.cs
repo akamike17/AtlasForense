@@ -53,6 +53,8 @@ public sealed class CasesController(IForensicCaseService service, IForensicRepor
         return Execute(input.CaseId, () => service.PrepareReportAsync(input, token));
     }
 
+    [HttpPost] public Task<IActionResult> ReviewReport(Guid id, string reviewer, bool approve, string notes, CancellationToken token) => Execute(id, () => service.ReviewReportAsync(id, reviewer, approve, notes, token));
+
     [HttpPost] public Task<IActionResult> Close(Guid id, string actor, CancellationToken token) => Execute(id, () => service.CloseAsync(id, actor, token));
 
     [HttpGet]

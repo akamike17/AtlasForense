@@ -14,5 +14,6 @@ public interface IForensicCaseService
     Task<OperationResult> AnalyzeEvidenceAsync(Guid caseId, Guid evidenceId, string actor, CancellationToken cancellationToken);
     Task<OperationResult> AddFindingAsync(FindingInput input, CancellationToken cancellationToken);
     Task<OperationResult> PrepareReportAsync(ReportInput input, CancellationToken cancellationToken);
+    Task<OperationResult> ReviewReportAsync(Guid id, string reviewer, bool approve, string notes, CancellationToken cancellationToken);
     Task<OperationResult> CloseAsync(Guid id, string actor, CancellationToken cancellationToken);
 }

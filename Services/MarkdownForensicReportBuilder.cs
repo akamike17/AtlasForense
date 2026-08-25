@@ -18,6 +18,8 @@ public sealed class MarkdownForensicReportBuilder : IForensicReportBuilder
         text.AppendLine($"**Preparado por:** {Escape(report.PreparedBy)}  ");
         text.AppendLine($"**Fecha UTC:** {report.PreparedAtUtc:O}  ");
         text.AppendLine($"**SHA-256 del informe sellado:** `{report.IntegrityHash}`").AppendLine();
+        if (item.ReportReview is not null)
+            text.AppendLine($"**Revisión independiente:** {(item.ReportReview.Approved ? "APROBADO" : "DEVUELTO")} por {Escape(item.ReportReview.ReviewedBy)} el {item.ReportReview.ReviewedAtUtc:O}; hash revisado `{item.ReportReview.ReviewedReportHash}`.").AppendLine();
 
         Section(text, "1. Resumen ejecutivo", report.ExecutiveSummary);
         Section(text, "2. Alcance y autorización", item.Scope);
