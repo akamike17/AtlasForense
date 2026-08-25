@@ -1,0 +1,29 @@
+name: SecurityCodeScan
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Add security analyzer
+        run: dotnet add AtlasForense.csproj package SecurityCodeScan.VS2019 --version 5.6.7
+      - name: Build and generate SARIF
+        run: dotnet build AtlasForense.slnx --configuration Release --no-restore -p:ErrorLog=security-code-scan.sarif -p:ErrorLogVersion=2.1
+      - name: Upload security results
+        if: always() && hashFiles('security-code-scan.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: security-code-scan.sarif
