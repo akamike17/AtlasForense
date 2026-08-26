@@ -22,6 +22,10 @@
 
 Procedimiento completo y ensayo automatizado en `RECOVERY.md`. Resumen: detener instancias, devolver respaldo + evidencia + claves, `--data-restore <archivo>`, `--data-verify`, confirmar inventario.
 
+## Verificación post-despliegue
+
+Tras desplegar o actualizar, ejecutar la prueba de humo E2E (`scripts\e2e-smoke.ps1`): arranca la aplicación real en un sandbox temporal y verifica arranque, bootstrap con TOTP real, sesión autenticada, métricas, protección anónima y creación de la base + clave maestra de cifrado. El sandbox se destruye al terminar.
+
 ## DAST externo
 
 El workflow `.github/workflows/dast.yml` publica la aplicación, la arranca contra `127.0.0.1:8080` y ejecuta un baseline de OWASP ZAP (manual, en cada push a master y semanalmente). La evidencia (`zap-report.json`, `zap-report.html`, log de la aplicación) queda archivada 90 días. Triaje: toda advertencia nueva se clasifica en el expediente de seguridad; las excepciones permanentes solo se aceptan en `.github/zap/rules.tsv` con justificación escrita. El escaneo cubre la superficie anónima; las rutas autenticadas están cubiertas por las sondas DAST automatizadas de la suite.
