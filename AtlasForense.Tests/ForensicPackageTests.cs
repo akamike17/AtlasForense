@@ -18,18 +18,19 @@ public sealed class ForensicPackageTests : IDisposable
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"atlas-package-{Guid.NewGuid():N}");
     private readonly JsonForensicCaseService _cases;
     private readonly TestSigner _signer = new();
+    private readonly AesGcmEvidenceCipher _cipher = AesGcmEvidenceCipher.Ephemeral();
 
     public ForensicPackageTests()
     {
         Directory.CreateDirectory(_root);
-        _cases = new JsonForensicCaseService(new TestEnvironment(_root), [new StaticTextAnalyzer()]);
+        _cases = new JsonForensicCaseService(new TestEnvironment(_root), [new StaticTextAnalyzer()], evidenceCipher: _cipher);
     }
 
     [Fact]
     public async Task SignedPackage_IsIndependentlyVerifiedAndTamperingIsRejected()
     {
         var item = await CreateApprovedCase();
-        var builder = new SignedForensicPackageBuilder(new TestEnvironment(_root), new MarkdownForensicReportBuilder(), _signer);
+        var builder = new SignedForensicPackageBuilder(new TestEnvironment(_root), new MarkdownForensicReportBuilder(), _signer, _cipher);
 
         var package = await builder.BuildAsync(item, default);
 
@@ -59,12 +60,12 @@ public sealed class ForensicPackageTests : IDisposable
         var item = await CreateApprovedCase();
         var evidence = item.Evidence.Single();
         await File.AppendAllTextAsync(Path.Combine(_root, "App_Data", "Evidence", item.Id.ToString("N"), evidence.StoredFileName), "tamper");
-        var builder = new SignedForensicPackageBuilder(new TestEnvironment(_root), new MarkdownForensicReportBuilder(), _signer);
+        var builder = new SignedForensicPackageBuilder(new TestEnvironment(_root), new MarkdownForensicReportBuilder(), _signer, _cipher);
 
         var result = await builder.BuildAsync(item, default);
 
         Assert.False(result.Success);
-        Assert.Contains("SHA-256", result.Message);
+        Assert.True(result.Message.Contains("SHA-256") || result.Message.Contains("descifrarse"), result.Message);
     }
 
     private async Task<ForensicCase> CreateApprovedCase()

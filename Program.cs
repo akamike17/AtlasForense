@@ -20,6 +20,10 @@ var dataProtection = builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keyPath));
 if (OperatingSystem.IsWindows() && !builder.Environment.IsEnvironment("Testing")) dataProtection.ProtectKeysWithDpapi();
 builder.Services.AddSingleton<IUserAccountService, SqliteUserAccountService>();
+builder.Services.AddSingleton<IEvidenceCipher>(provider => AesGcmEvidenceCipher.FromProtectedKey(
+    plain => provider.GetRequiredService<IDataProtectionProvider>().CreateProtector("AtlasForense.EvidenceKey").Protect(plain),
+    blob => provider.GetRequiredService<IDataProtectionProvider>().CreateProtector("AtlasForense.EvidenceKey").Unprotect(blob),
+    Path.Combine(keyPath, "evidence-master.key")));
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {

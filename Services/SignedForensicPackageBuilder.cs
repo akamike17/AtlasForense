@@ -14,12 +14,14 @@ public sealed class SignedForensicPackageBuilder : IForensicPackageBuilder
     private readonly string _exportRoot;
     private readonly IForensicReportBuilder _reports;
     private readonly IForensicPackageSigner _signer;
+    private readonly IEvidenceCipher _cipher;
 
-    public SignedForensicPackageBuilder(IWebHostEnvironment environment, IForensicReportBuilder reports, IForensicPackageSigner signer)
+    public SignedForensicPackageBuilder(IWebHostEnvironment environment, IForensicReportBuilder reports, IForensicPackageSigner signer, IEvidenceCipher? evidenceCipher = null)
     {
         var data = Path.Combine(environment.ContentRootPath, "App_Data");
         _evidenceRoot = Path.Combine(data, "Evidence"); _exportRoot = Path.Combine(data, "Exports");
         Directory.CreateDirectory(_exportRoot); _reports = reports; _signer = signer;
+        _cipher = evidenceCipher ?? AesGcmEvidenceCipher.Ephemeral();
     }
 
     public async Task<ForensicPackageResult> BuildAsync(ForensicCase item, CancellationToken cancellationToken)
@@ -36,10 +38,18 @@ public sealed class SignedForensicPackageBuilder : IForensicPackageBuilder
             cancellationToken.ThrowIfCancellationRequested();
             var source = Path.Combine(_evidenceRoot, item.Id.ToString("N"), evidence.StoredFileName);
             if (!File.Exists(source)) return new(false, $"Falta la evidencia {evidence.Identifier}.", string.Empty, string.Empty, string.Empty, string.Empty);
-            var hash = await HashFileAsync(source, cancellationToken);
+            string hash;
+            try { hash = _cipher.IsEnvelope(source) ? await _cipher.ComputePlaintextSha256Async(source, cancellationToken) : await HashFileAsync(source, cancellationToken); }
+            catch (InvalidDataException) { return new(false, $"La evidencia {evidence.Identifier} no pudo descifrarse; posible alteración.", string.Empty, string.Empty, string.Empty, string.Empty); }
             if (!hash.Equals(evidence.Sha256, StringComparison.OrdinalIgnoreCase)) return new(false, $"La evidencia {evidence.Identifier} no superó SHA-256.", string.Empty, string.Empty, string.Empty, string.Empty);
             var archivePath = $"evidence/{evidence.Identifier}/{SafeName(evidence.OriginalFileName)}";
-            files.Add((archivePath, source, null, new(archivePath, evidence.SizeBytes, hash, "original-evidence")));
+            if (_cipher.IsEnvelope(source))
+            {
+                var decrypted = Path.Combine(_exportRoot, $"{Guid.NewGuid():N}.plain");
+                await _cipher.DecryptAsync(source, decrypted, cancellationToken);
+                files.Add((archivePath, decrypted, null, new(archivePath, evidence.SizeBytes, hash, "original-evidence")));
+            }
+            else files.Add((archivePath, source, null, new(archivePath, evidence.SizeBytes, hash, "original-evidence")));
         }
         var canonicalManifest = BuildCanonicalManifest(item, files.Select(x => x.Manifest));
         var signature = _signer.Sign(canonicalManifest);
@@ -66,12 +76,20 @@ public sealed class SignedForensicPackageBuilder : IForensicPackageBuilder
             if (!await VerifyWrittenPackageAsync(path, files.Select(x => x.Manifest), cancellationToken))
             {
                 File.Delete(path);
+                DeleteDecryptedTemps(files);
                 return new(false, "El paquete escrito no coincide con el manifiesto; fue descartado.", string.Empty, string.Empty, string.Empty, string.Empty);
             }
             var packageHash = await HashFileAsync(path, cancellationToken);
+            DeleteDecryptedTemps(files);
             return new(true, "Paquete firmado y verificado antes de entrega.", fileName, path, packageHash, signature.CertificateSha256);
         }
-        catch { if (File.Exists(path)) File.Delete(path); throw; }
+        catch { if (File.Exists(path)) File.Delete(path); DeleteDecryptedTemps(files); throw; }
+    }
+
+    private static void DeleteDecryptedTemps(List<(string ArchivePath, string SourcePath, byte[]? Content, PackageManifestEntry Manifest)> files)
+    {
+        foreach (var file in files)
+            if (file.SourcePath.EndsWith(".plain", StringComparison.Ordinal) && File.Exists(file.SourcePath)) File.Delete(file.SourcePath);
     }
 
     private static byte[] BuildCanonicalManifest(ForensicCase item, IEnumerable<PackageManifestEntry> entries)

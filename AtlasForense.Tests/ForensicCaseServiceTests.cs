@@ -16,11 +16,12 @@ public sealed class ForensicCaseServiceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"atlas-forense-tests-{Guid.NewGuid():N}");
     private readonly JsonForensicCaseService _service;
+    private readonly AesGcmEvidenceCipher _cipher = AesGcmEvidenceCipher.Ephemeral();
 
     public ForensicCaseServiceTests()
     {
         Directory.CreateDirectory(_root);
-        _service = new JsonForensicCaseService(new TestEnvironment(_root), [new StaticTextAnalyzer(), new BinaryMetadataAnalyzer()]);
+        _service = new JsonForensicCaseService(new TestEnvironment(_root), [new StaticTextAnalyzer(), new BinaryMetadataAnalyzer()], evidenceCipher: _cipher);
     }
 
     [Fact]
@@ -99,7 +100,13 @@ public sealed class ForensicCaseServiceTests : IDisposable
         var evidence = Assert.Single(_service.Get(item.Id)!.Evidence);
         Assert.Equal(expected, evidence.Sha256);
         var storedPath = Path.Combine(_root, "App_Data", "Evidence", item.Id.ToString("N"), evidence.StoredFileName);
-        Assert.Equal(bytes, await File.ReadAllBytesAsync(storedPath));
+        var stored = await File.ReadAllBytesAsync(storedPath);
+        Assert.NotEqual(bytes, stored);
+        Assert.StartsWith("ATLEV1", Encoding.ASCII.GetString(stored, 0, 6));
+        var decryptedPath = Path.Combine(_root, "decrypted.bin");
+        await _cipher.DecryptAsync(storedPath, decryptedPath, default);
+        Assert.Equal(bytes, await File.ReadAllBytesAsync(decryptedPath));
+        File.Delete(decryptedPath);
     }
 
     [Fact]

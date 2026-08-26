@@ -18,6 +18,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
     private readonly string _evidencePath;
     private readonly IReadOnlyList<IForensicAnalyzer> _analyzers;
     private readonly IArchiveSafetyInspector _archiveInspector;
+    private readonly IEvidenceCipher _cipher;
     private readonly ForensicStorageOptions _storageOptions;
     private readonly Dictionary<Guid, long> _rowVersions = [];
     private List<ForensicCase> _cases;
@@ -27,7 +28,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         SqliteRuntime.Initialize();
     }
 
-    public JsonForensicCaseService(IWebHostEnvironment environment, IEnumerable<IForensicAnalyzer>? analyzers = null, IArchiveSafetyInspector? archiveInspector = null, IOptions<ForensicStorageOptions>? storageOptions = null)
+    public JsonForensicCaseService(IWebHostEnvironment environment, IEnumerable<IForensicAnalyzer>? analyzers = null, IArchiveSafetyInspector? archiveInspector = null, IOptions<ForensicStorageOptions>? storageOptions = null, IEvidenceCipher? evidenceCipher = null)
     {
         var dataPath = Path.Combine(environment.ContentRootPath, "App_Data");
         _evidencePath = Path.Combine(dataPath, "Evidence");
@@ -37,6 +38,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         _analyzers = analyzers?.ToList() ?? [];
         _storageOptions = storageOptions?.Value ?? new ForensicStorageOptions();
         _archiveInspector = archiveInspector ?? new ArchiveSafetyInspector(Options.Create(_storageOptions));
+        _cipher = evidenceCipher ?? AesGcmEvidenceCipher.Ephemeral();
         Directory.CreateDirectory(dataPath);
         Directory.CreateDirectory(_evidencePath);
         Directory.CreateDirectory(_backupPath);
@@ -226,12 +228,17 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                 var storedName = $"{hash}-{evidenceId:N}";
                 finalPath = Path.Combine(casePath, storedName);
                 File.Move(tempPath, finalPath);
+                var plaintextSize = new FileInfo(finalPath).Length;
+                var encryptedPath = finalPath + ".enc";
+                await _cipher.EncryptAsync(finalPath, encryptedPath, acquisitionToken);
+                File.Delete(finalPath);
+                File.Move(encryptedPath, finalPath);
                 var duplicate = item.Evidence.FirstOrDefault(x => x.Sha256.Equals(hash, StringComparison.OrdinalIgnoreCase));
                 var evidence = new EvidenceItem
                 {
                     Id = evidenceId, Identifier = $"{item.Folio}-E{item.Evidence.Count + 1:D3}", Description = input.Description.Trim(),
                     SourceType = input.SourceType.Trim(), SourceLocation = input.SourceLocation.Trim(), OriginalFileName = Path.GetFileName(input.File.FileName),
-                    StoredFileName = storedName, SizeBytes = new FileInfo(finalPath).Length, Sha256 = hash, AcquiredAtUtc = DateTimeOffset.UtcNow,
+                    StoredFileName = storedName, SizeBytes = plaintextSize, Sha256 = hash, AcquiredAtUtc = DateTimeOffset.UtcNow,
                     AcquiredBy = input.AcquiredBy.Trim(), AcquisitionMethod = input.AcquisitionMethod.Trim(), Status = EvidenceStatus.Verified,
                     Classification = EvidenceClassification.Original, DetectedFileType = detectedType, DetectedMimeType = mime,
                     DuplicateOfEvidenceId = duplicate?.Id, ArchiveEntryCount = archiveResult?.EntryCount, ArchiveExpandedBytes = archiveResult?.ExpandedBytes
@@ -240,7 +247,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                 {
                     Source = evidence.SourceLocation, DeviceIdentifier = input.SourceDeviceIdentifier.Trim(), ToolName = input.ToolName.Trim(), ToolVersion = input.ToolVersion.Trim(),
                     Operator = evidence.AcquiredBy, StartedAtUtc = acquisitionStarted, CompletedAtUtc = DateTimeOffset.UtcNow, Method = evidence.AcquisitionMethod,
-                    Limitations = input.AcquisitionLimitations.Trim(), Verification = $"SHA-256 {hash}; tipo {detectedType}; MIME {mime}."
+                    Limitations = input.AcquisitionLimitations.Trim(), Verification = $"SHA-256 {hash}; tipo {detectedType}; MIME {mime}; cifrado AES-256-GCM en reposo."
                 };
                 evidence.ChainOfCustody.Add(new CustodyEvent { Action = "Adquisición y verificación SHA-256", PerformedBy = evidence.AcquiredBy, Location = evidence.SourceLocation, Notes = $"Hash {hash}" });
                 item.Evidence.Add(evidence);
@@ -303,7 +310,14 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
 
             var path = Path.Combine(_evidencePath, item.Id.ToString("N"), evidence.StoredFileName);
             if (!File.Exists(path)) return OperationResult.Fail("El archivo preservado no está disponible.");
-            var currentHash = await HashFileAsync(path, token);
+            string currentHash;
+            try { currentHash = _cipher.IsEnvelope(path) ? await _cipher.ComputePlaintextSha256Async(path, token) : await HashFileAsync(path, token); }
+            catch (InvalidDataException)
+            {
+                AppendAudit(item, actor, "INTEGRITY_FAILURE", $"{evidence.Identifier}: el sobre cifrado no pudo descifrarse.");
+                await SaveAsync(token);
+                return OperationResult.Fail("La evidencia no pudo descifrarse; posible alteración en reposo. El análisis fue bloqueado.");
+            }
             if (!currentHash.Equals(evidence.Sha256, StringComparison.OrdinalIgnoreCase))
             {
                 AppendAudit(item, actor, "INTEGRITY_FAILURE", $"{evidence.Identifier}: hash almacenado {evidence.Sha256}; actual {currentHash}.");
@@ -311,6 +325,16 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                 return OperationResult.Fail("La evidencia cambió desde su adquisición. El análisis fue bloqueado.");
             }
 
+            var analysisPath = path;
+            string? workingPath = null;
+            if (_cipher.IsEnvelope(path))
+            {
+                workingPath = Path.Combine(_evidencePath, item.Id.ToString("N"), $"working-{Guid.NewGuid():N}");
+                await _cipher.DecryptAsync(path, workingPath, token);
+                analysisPath = workingPath;
+            }
+            try
+            {
             var completed = 0;
             var summaries = new List<string>();
             foreach (var analyzer in analyzers)
@@ -325,7 +349,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                 item.AnalysisRuns.Add(run);
                 try
                 {
-                    var output = await analyzer.AnalyzeAsync(new AnalyzerContext(item.Id, run.Id, evidence, path, token));
+                    var output = await analyzer.AnalyzeAsync(new AnalyzerContext(item.Id, run.Id, evidence, analysisPath, token));
                     item.Artifacts.RemoveAll(x => priorRunIds.Contains(x.AnalysisRunId) && x.Name != "Manual");
                     item.Artifacts.AddRange(output.Artifacts);
                     MergeIndicators(item, output.Indicators);
@@ -356,6 +380,8 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
             return completed > 0
                 ? OperationResult.Ok($"{completed} analizador(es) completados. {string.Join(" ", summaries)}")
                 : OperationResult.Fail("Ningún analizador pudo procesar la evidencia; se conservaron los registros de ejecución.");
+            }
+            finally { if (workingPath is not null && File.Exists(workingPath)) File.Delete(workingPath); }
         }
         finally { _gate.Release(); }
     }
