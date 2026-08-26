@@ -33,12 +33,12 @@ public sealed class StixIndicatorExporter : IStixIndicatorExporter
                 ["modified"] = created,
                 ["name"] = $"{indicator.Type}: {indicator.Value}",
                 ["description"] = string.IsNullOrWhiteSpace(indicator.Description) ? "Indicador extraído por análisis estático de evidencia." : indicator.Description,
-                ["indicator_types"] = new JsonArray("malicious-activity"),
                 ["pattern"] = pattern,
                 ["pattern_type"] = "stix",
                 ["valid_from"] = created,
                 ["confidence"] = ConfidenceScore(indicator.Confidence)
             };
+            if (indicator.IsMalicious) node["indicator_types"] = new JsonArray("malicious-activity");
             objects.Add(node);
         }
 
@@ -93,12 +93,14 @@ public sealed class StixIndicatorExporter : IStixIndicatorExporter
         };
     }
 
+    // Confianza STIX (0-100) sobre la afirmación "indicador relevante para la investigación",
+    // no sobre su mera observación: observado sin contexto < inferido < confirmado < corroborado.
     private static int ConfidenceScore(ConfidenceLevel level) => level switch
     {
         ConfidenceLevel.Confirmed => 70,
         ConfidenceLevel.Corroborated => 85,
         ConfidenceLevel.Inferred => 40,
-        _ => 30
+        _ => 20
     };
 
     private static string StixId(string type, string seed)

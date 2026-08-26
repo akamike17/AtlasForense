@@ -1,7 +1,13 @@
 namespace AtlasForense.Models;
 
 public enum ArtifactKind { Metadata, FileType, Entropy, Url, Domain, IpAddress, Email, FileHash, NetworkEndpoint, ScriptFunction, String, SecretReference, Capability, DecodedContent }
-public enum ConfidenceLevel { Observed, Confirmed, Corroborated, Inferred }
+
+// Semántica (los valores numéricos están persistidos en expedientes; prohibido reordenar o renumerar):
+// Observed(0) = dato visto directamente en la evidencia.
+// Confirmed(1) = validado por el analista contra una fuente fiable.
+// Corroborated(2) = respaldado por dos o más fuentes o evidencias independientes.
+// Inferred(3) = derivado por heurística, decodificación o correlación; el menos firme.
+public enum ConfidenceLevel { Observed = 0, Confirmed = 1, Corroborated = 2, Inferred = 3 }
 public enum IndicatorType { Url, Domain, IpAddress, Email, Hash, FileName, RegistryKey, Mutex, Other }
 
 public sealed class AnalysisRun
