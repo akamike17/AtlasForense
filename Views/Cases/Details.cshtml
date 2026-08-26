@@ -54,7 +54,10 @@
             <label class="field span-2">Descripción<input name="Description" class="form-control" required maxlength="500" /></label>
             <label class="field">Tipo de fuente<input name="SourceType" class="form-control" required maxlength="80" /></label>
             <label class="field">Ubicación de origen<input name="SourceLocation" class="form-control" required maxlength="300" /></label>
-            <label class="field span-2">Método o herramienta<input name="AcquisitionMethod" class="form-control" required maxlength="200" /></label>
+            <label class="field">Método<input name="AcquisitionMethod" class="form-control" required maxlength="200" /></label><label class="field">Dispositivo o fuente<input name="SourceDeviceIdentifier" class="form-control" maxlength="200" /></label>
+            <label class="field">Herramienta<input name="ToolName" class="form-control" required maxlength="120" /></label><label class="field">Versión<input name="ToolVersion" class="form-control" required maxlength="80" /></label>
+            <label class="field span-2">SHA-256 esperado (opcional)<input name="ExpectedSha256" class="form-control code" maxlength="64" pattern="[A-Fa-f0-9]{64}" autocomplete="off" /></label>
+            <label class="field span-2">Limitaciones<textarea name="AcquisitionLimitations" class="form-control" maxlength="1000"></textarea></label>
             <button class="btn btn-primary span-2">Adquirir y verificar SHA-256</button>
         </form>
     }

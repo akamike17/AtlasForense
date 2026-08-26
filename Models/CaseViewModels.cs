@@ -29,6 +29,12 @@ public sealed class AcquireEvidenceInput
     [Required, StringLength(300)] public string SourceLocation { get; set; } = string.Empty;
     [BindNever, StringLength(120)] public string AcquiredBy { get; set; } = string.Empty;
     [Required, StringLength(200)] public string AcquisitionMethod { get; set; } = string.Empty;
+    [Required, StringLength(120)] public string ToolName { get; set; } = string.Empty;
+    [Required, StringLength(80)] public string ToolVersion { get; set; } = string.Empty;
+    [StringLength(200)] public string SourceDeviceIdentifier { get; set; } = string.Empty;
+    [StringLength(1000)] public string AcquisitionLimitations { get; set; } = string.Empty;
+    [RegularExpression("^[A-Fa-f0-9]{64}$", ErrorMessage = "El SHA-256 esperado debe contener 64 caracteres hexadecimales.")]
+    public string? ExpectedSha256 { get; set; }
     [Required] public IFormFile? File { get; set; }
 }
 

@@ -68,6 +68,13 @@ public sealed class EvidenceItem
     public string AcquiredBy { get; set; } = string.Empty;
     public string AcquisitionMethod { get; set; } = string.Empty;
     public EvidenceStatus Status { get; set; }
+    public EvidenceClassification Classification { get; set; } = EvidenceClassification.Original;
+    public string DetectedFileType { get; set; } = "Unknown";
+    public string DetectedMimeType { get; set; } = "application/octet-stream";
+    public Guid? DuplicateOfEvidenceId { get; set; }
+    public int? ArchiveEntryCount { get; set; }
+    public long? ArchiveExpandedBytes { get; set; }
+    public AcquisitionWorksheet AcquisitionWorksheet { get; set; } = new();
     public List<CustodyEvent> ChainOfCustody { get; set; } = [];
 }
 
@@ -104,6 +111,20 @@ public sealed class FinalReport
     public string PreparedBy { get; set; } = string.Empty;
     public DateTimeOffset PreparedAtUtc { get; set; }
     public string IntegrityHash { get; set; } = string.Empty;
+}
+
+public sealed class AcquisitionWorksheet
+{
+    public string Source { get; set; } = string.Empty;
+    public string DeviceIdentifier { get; set; } = string.Empty;
+    public string ToolName { get; set; } = string.Empty;
+    public string ToolVersion { get; set; } = string.Empty;
+    public string Operator { get; set; } = string.Empty;
+    public DateTimeOffset StartedAtUtc { get; set; }
+    public DateTimeOffset CompletedAtUtc { get; set; }
+    public string Method { get; set; } = string.Empty;
+    public string Limitations { get; set; } = string.Empty;
+    public string Verification { get; set; } = string.Empty;
 }
 
 public sealed class CaseClosure

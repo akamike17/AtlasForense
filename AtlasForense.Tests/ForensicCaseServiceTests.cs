@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.IO.Compression;
 using AtlasForense.Models;
 using AtlasForense.Services;
 using AtlasForense.Forensics;
@@ -362,6 +363,112 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Assert.Equal("Additional authorized evidence", item.Closures[0].ReopenReason);
     }
 
+    [Fact]
+    public async Task Acquisition_DetectsSignatureWithoutTrustingExtensionAndRecordsDuplicates()
+    {
+        var item = await CreateCase(); await Authorize(item.Id);
+        var pdf = "%PDF-1.7\nknown"u8.ToArray();
+        Assert.True((await Acquire(item.Id, "not-a-pdf.txt", pdf)).Success);
+        Assert.True((await Acquire(item.Id, "second-name.bin", pdf)).Success);
+
+        Assert.All(item.Evidence, evidence => { Assert.Equal("PDF", evidence.DetectedFileType); Assert.Equal("application/pdf", evidence.DetectedMimeType); Assert.DoesNotContain('.', evidence.StoredFileName); });
+        Assert.Null(item.Evidence[0].DuplicateOfEvidenceId);
+        Assert.Equal(item.Evidence[0].Id, item.Evidence[1].DuplicateOfEvidenceId);
+    }
+
+    [Fact]
+    public async Task Acquisition_BlocksUnsafeArchiveAndCleansTemporaryFiles()
+    {
+        var item = await CreateCase(); await Authorize(item.Id);
+        byte[] content;
+        using (var output = new MemoryStream())
+        {
+            using (var archive = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
+            using (var writer = new StreamWriter(archive.CreateEntry("../escape.txt").Open())) writer.Write("unsafe");
+            content = output.ToArray();
+        }
+
+        var result = await Acquire(item.Id, "evidence.zip", content);
+
+        Assert.False(result.Success);
+        Assert.Empty(item.Evidence);
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root, "App_Data", "Evidence"), "*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public async Task Acquisition_RejectsTruncatedStreamAndRemovesPartialFile()
+    {
+        var item = await CreateCase(); await Authorize(item.Id);
+        var stream = new ThrowingReadStream(Encoding.UTF8.GetBytes("partial forensic payload"), 8);
+        var file = new FormFile(stream, 0, 24, "File", "truncated.bin");
+
+        var result = await _service.AcquireAsync(AcquisitionInput(item.Id, file), default);
+
+        Assert.False(result.Success);
+        Assert.Empty(item.Evidence);
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root, "App_Data", "Evidence"), "*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public async Task Acquisition_CancellationLeavesNoEvidenceOrTemporaryFile()
+    {
+        var item = await CreateCase(); await Authorize(item.Id);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var content = Encoding.UTF8.GetBytes("cancelled payload");
+        var file = new FormFile(new MemoryStream(content), 0, content.Length, "File", "cancelled.bin");
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => _service.AcquireAsync(AcquisitionInput(item.Id, file), cancellation.Token));
+
+        Assert.Empty(item.Evidence);
+        var evidenceRoot = Path.Combine(_root, "App_Data", "Evidence");
+        Assert.Empty(Directory.EnumerateFiles(evidenceRoot, "*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public async Task ConcurrentAcquisitionsAreSerializedAndPersistDistinctEvidence()
+    {
+        var item = await CreateCase(); await Authorize(item.Id);
+        var acquisitions = Enumerable.Range(1, 4).Select(index => Acquire(item.Id, $"evidence-{index}.bin", $"payload-{index}"));
+
+        var results = await Task.WhenAll(acquisitions);
+
+        Assert.All(results, result => Assert.True(result.Success, result.Message));
+        Assert.Equal(4, item.Evidence.Count);
+        Assert.Equal(4, item.Evidence.Select(x => x.Identifier).Distinct().Count());
+        Assert.Equal(4, item.Evidence.Select(x => x.StoredFileName).Distinct().Count());
+        Assert.Equal(4, Directory.EnumerateFiles(Path.Combine(_root, "App_Data", "Evidence"), "*", SearchOption.AllDirectories).Count());
+    }
+
+    [Fact]
+    public async Task Acquisition_RejectsExpectedHashMismatchAndCleansTemporaryFile()
+    {
+        var item = await CreateCase(); await Authorize(item.Id);
+        var content = Encoding.UTF8.GetBytes("known payload");
+        var file = new FormFile(new MemoryStream(content), 0, content.Length, "File", "evidence.bin");
+        var input = AcquisitionInput(item.Id, file);
+        input.ExpectedSha256 = new string('0', 64);
+
+        var result = await _service.AcquireAsync(input, default);
+
+        Assert.False(result.Success);
+        Assert.Empty(item.Evidence);
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root, "App_Data", "Evidence"), "*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public async Task Acquisition_PreservesSeparateItemsWithDuplicateOriginalFilename()
+    {
+        var item = await CreateCase(); await Authorize(item.Id);
+
+        Assert.True((await Acquire(item.Id, "duplicate.bin", "first payload")).Success);
+        Assert.True((await Acquire(item.Id, "duplicate.bin", "second payload")).Success);
+
+        Assert.Equal(2, item.Evidence.Count);
+        Assert.All(item.Evidence, evidence => Assert.Equal("duplicate.bin", evidence.OriginalFileName));
+        Assert.Equal(2, item.Evidence.Select(evidence => evidence.StoredFileName).Distinct().Count());
+    }
+
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
     private Task<OperationResult> Authorize(Guid id) => _service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = id, Authority = "Test authority", Reference = "AUTH-001", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
     private Task<OperationResult> Acquire(Guid id, string name, string content) => Acquire(id, name, Encoding.UTF8.GetBytes(content));
@@ -369,8 +476,14 @@ public sealed class ForensicCaseServiceTests : IDisposable
     {
         var stream = new MemoryStream(content);
         var file = new FormFile(stream, 0, content.Length, "File", name);
-        return _service.AcquireAsync(new AcquireEvidenceInput { CaseId = id, Description = "Known evidence", SourceType = "Test fixture", SourceLocation = "Isolated lab", AcquiredBy = "Examiner A", AcquisitionMethod = "Controlled byte copy", File = file }, default);
+        return _service.AcquireAsync(AcquisitionInput(id, file), default);
     }
+    private static AcquireEvidenceInput AcquisitionInput(Guid id, IFormFile file) => new()
+    {
+        CaseId = id, Description = "Known evidence", SourceType = "Test fixture", SourceLocation = "Isolated lab",
+        AcquiredBy = "Examiner A", AcquisitionMethod = "Controlled byte copy", ToolName = "Atlas test fixture",
+        ToolVersion = "1.0", SourceDeviceIdentifier = "fixture-001", File = file
+    };
     private Task<OperationResult> AddFinding(Guid id) => _service.AddFindingAsync(new FindingInput { CaseId = id, Title = "Known indicator", Severity = FindingSeverity.High, Description = "Expected finding", TechnicalDetails = "Matched controlled fixture", EvidenceReferences = $"{_service.Get(id)!.Evidence.Single().Identifier}", Analyst = "Analyst A" }, default);
     private Task<OperationResult> PrepareReport(Guid id) => _service.PrepareReportAsync(new ReportInput { CaseId = id, ExecutiveSummary = "Controlled result", Methodology = "Known input compared with expected output", Conclusions = "Integrity preserved", Recommendations = "Retain validation record", PreparedBy = "Analyst A" }, default);
 
@@ -395,5 +508,27 @@ public sealed class ForensicCaseServiceTests : IDisposable
         public string EnvironmentName { get; set; } = "Testing";
         public string ContentRootPath { get; set; }
         public IFileProvider ContentRootFileProvider { get; set; }
+    }
+
+    private sealed class ThrowingReadStream(byte[] content, int throwAfterBytes) : MemoryStream(content)
+    {
+        private int _bytesRead;
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (_bytesRead >= throwAfterBytes) throw new IOException("Simulated truncated source.");
+            var read = base.Read(buffer, offset, Math.Min(count, throwAfterBytes - _bytesRead));
+            _bytesRead += read;
+            return read;
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_bytesRead >= throwAfterBytes) throw new IOException("Simulated truncated source.");
+            var read = base.Read(buffer.Span[..Math.Min(buffer.Length, throwAfterBytes - _bytesRead)]);
+            _bytesRead += read;
+            return ValueTask.FromResult(read);
+        }
     }
 }

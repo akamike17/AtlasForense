@@ -39,6 +39,13 @@ public sealed class MarkdownForensicReportBuilder : IForensicReportBuilder
         foreach (var evidence in item.Evidence.OrderBy(x => x.Identifier))
             text.AppendLine($"| {Cell(evidence.Identifier)} | {Cell(evidence.OriginalFileName)} | {evidence.SizeBytes} | `{evidence.Sha256}` | {evidence.AcquiredAtUtc:O} | {Cell(evidence.AcquisitionMethod)} |");
         text.AppendLine();
+        text.AppendLine("### Hojas de adquisición").AppendLine();
+        foreach (var evidence in item.Evidence.OrderBy(x => x.Identifier))
+        {
+            var worksheet = evidence.AcquisitionWorksheet ?? new AcquisitionWorksheet();
+            text.AppendLine($"- **{Escape(evidence.Identifier)}** — fuente: {Escape(worksheet.Source)}; dispositivo: {Escape(worksheet.DeviceIdentifier)}; herramienta: {Escape(worksheet.ToolName)} {Escape(worksheet.ToolVersion)}; operador: {Escape(worksheet.Operator)}; inicio/fin UTC: {worksheet.StartedAtUtc:O} / {worksheet.CompletedAtUtc:O}; verificación: {Escape(worksheet.Verification)}; limitaciones: {Escape(worksheet.Limitations)}");
+        }
+        text.AppendLine();
 
         text.AppendLine("## 5. Ejecuciones de análisis").AppendLine();
         foreach (var run in item.AnalysisRuns.OrderBy(x => x.StartedAtUtc))

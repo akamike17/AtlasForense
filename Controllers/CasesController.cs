@@ -35,7 +35,7 @@ public sealed class CasesController(IForensicCaseService service, IForensicRepor
 
     [HttpPost, Authorize(Policy = "AuthorizeCase")] public Task<IActionResult> Authorize(AuthorizeCaseInput input, CancellationToken token) { input.ApprovedBy = Actor; return Execute(input.CaseId, () => service.AuthorizeAsync(input, token), ForensicRole.Examiner); }
 
-    [HttpPost, RequestSizeLimit(104_857_600), Authorize(Policy = "Examine")]
+    [HttpPost, Authorize(Policy = "Examine")]
     public Task<IActionResult> Acquire(AcquireEvidenceInput input, CancellationToken token)
     {
         input.AcquiredBy = Actor;

@@ -9,6 +9,8 @@ using System.Security.Cryptography;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuredEvidenceLimit = builder.Configuration.GetValue<long?>("ForensicStorage:MaxEvidenceBytes") ?? 100 * 1024 * 1024;
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = checked(configuredEvidenceLimit + 1024 * 1024));
 
 builder.Services.AddControllersWithViews(options => options.MaxModelValidationErrors = 100);
 var keyPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "Keys");
@@ -79,7 +81,11 @@ builder.Services.AddSingleton<IForensicPackageBuilder, SignedForensicPackageBuil
 builder.Services.AddSingleton<IContentTransformationService, ContentTransformationService>();
 builder.Services.AddSingleton<IForensicAnalyzer, StaticTextAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, BinaryMetadataAnalyzer>();
-builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = 104_857_600);
+builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = checked(configuredEvidenceLimit + 1024 * 1024));
+builder.Services.AddOptions<AtlasForense.Models.ForensicStorageOptions>()
+    .Bind(builder.Configuration.GetSection(AtlasForense.Models.ForensicStorageOptions.SectionName))
+    .ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddSingleton<IArchiveSafetyInspector, ArchiveSafetyInspector>();
 builder.Services.AddHealthChecks();
 builder.Services.AddRateLimiter(options =>
 {

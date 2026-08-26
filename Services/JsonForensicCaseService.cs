@@ -4,12 +4,12 @@ using System.Text.Json;
 using AtlasForense.Models;
 using AtlasForense.Forensics;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Options;
 
 namespace AtlasForense.Services;
 
 public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDataMaintenance
 {
-    private const long MaxEvidenceBytes = 100 * 1024 * 1024;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _legacyDatabasePath;
@@ -17,6 +17,8 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
     private readonly string _backupPath;
     private readonly string _evidencePath;
     private readonly IReadOnlyList<IForensicAnalyzer> _analyzers;
+    private readonly IArchiveSafetyInspector _archiveInspector;
+    private readonly ForensicStorageOptions _storageOptions;
     private readonly Dictionary<Guid, long> _rowVersions = [];
     private List<ForensicCase> _cases;
 
@@ -25,7 +27,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         SqliteRuntime.Initialize();
     }
 
-    public JsonForensicCaseService(IWebHostEnvironment environment, IEnumerable<IForensicAnalyzer>? analyzers = null)
+    public JsonForensicCaseService(IWebHostEnvironment environment, IEnumerable<IForensicAnalyzer>? analyzers = null, IArchiveSafetyInspector? archiveInspector = null, IOptions<ForensicStorageOptions>? storageOptions = null)
     {
         var dataPath = Path.Combine(environment.ContentRootPath, "App_Data");
         _evidencePath = Path.Combine(dataPath, "Evidence");
@@ -33,6 +35,8 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         _databasePath = Path.Combine(dataPath, "atlas-forense.db");
         _backupPath = Path.Combine(dataPath, "Backups");
         _analyzers = analyzers?.ToList() ?? [];
+        _storageOptions = storageOptions?.Value ?? new ForensicStorageOptions();
+        _archiveInspector = archiveInspector ?? new ArchiveSafetyInspector(Options.Create(_storageOptions));
         Directory.CreateDirectory(dataPath);
         Directory.CreateDirectory(_evidencePath);
         Directory.CreateDirectory(_backupPath);
@@ -174,41 +178,92 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
     public async Task<OperationResult> AcquireAsync(AcquireEvidenceInput input, CancellationToken cancellationToken)
     {
         if (input.File is null || input.File.Length == 0) return OperationResult.Fail("Selecciona un archivo de evidencia.");
-        if (input.File.Length > MaxEvidenceBytes) return OperationResult.Fail("El archivo excede el límite de 100 MB.");
-        await _gate.WaitAsync(cancellationToken);
+        if (input.File.Length > _storageOptions.MaxEvidenceBytes) return OperationResult.Fail($"El archivo excede el límite de {_storageOptions.MaxEvidenceBytes} bytes.");
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(_storageOptions.AcquisitionTimeoutSeconds));
+        var acquisitionToken = timeout.Token;
+        await _gate.WaitAsync(acquisitionToken);
         try
         {
             var item = Get(input.CaseId);
             if (item is null) return OperationResult.Fail("Expediente no encontrado.");
             if (item.Status is not (CaseStatus.Authorized or CaseStatus.Acquiring)) return OperationResult.Fail("La adquisición requiere un expediente autorizado.");
             var evidenceId = Guid.NewGuid();
-            var extension = Path.GetExtension(Path.GetFileName(input.File.FileName));
-            if (extension.Length > 12) extension = string.Empty;
             var casePath = Path.Combine(_evidencePath, item.Id.ToString("N"));
             Directory.CreateDirectory(casePath);
-            var storedName = $"{evidenceId:N}{extension.ToLowerInvariant()}";
-            var finalPath = Path.Combine(casePath, storedName);
-            var tempPath = finalPath + ".upload";
+            var tempPath = Path.Combine(casePath, $"{evidenceId:N}.upload");
+            string? finalPath = null;
+            var previousStatus = item.Status;
+            var previousAuditCount = item.AuditTrail.Count;
+            var acquisitionStarted = DateTimeOffset.UtcNow;
             try
             {
                 await using (var source = input.File.OpenReadStream())
                 await using (var destination = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))
-                    await source.CopyToAsync(destination, cancellationToken);
-                var hash = await HashFileAsync(tempPath, cancellationToken);
+                {
+                    var buffer = new byte[81920];
+                    long copied = 0;
+                    while (true)
+                    {
+                        var read = await source.ReadAsync(buffer, acquisitionToken);
+                        if (read == 0) break;
+                        copied = checked(copied + read);
+                        if (copied > _storageOptions.MaxEvidenceBytes) return OperationResult.Fail("El flujo recibido excede el límite configurado.");
+                        await destination.WriteAsync(buffer.AsMemory(0, read), acquisitionToken);
+                    }
+                    await destination.FlushAsync(acquisitionToken);
+                }
+                var hash = await HashFileAsync(tempPath, acquisitionToken);
+                if (!string.IsNullOrWhiteSpace(input.ExpectedSha256) && !hash.Equals(input.ExpectedSha256.Trim(), StringComparison.OrdinalIgnoreCase))
+                    return OperationResult.Fail("El SHA-256 adquirido no coincide con el valor esperado; la evidencia temporal fue descartada.");
+                var (detectedType, mime) = await DetectTypeAsync(tempPath, acquisitionToken);
+                ArchiveSafetyResult? archiveResult = null;
+                if (detectedType == "ZIP")
+                {
+                    archiveResult = await _archiveInspector.InspectZipAsync(tempPath, acquisitionToken);
+                    if (!archiveResult.Safe) return OperationResult.Fail($"Adquisición bloqueada: {archiveResult.Message}");
+                }
+                var storedName = $"{hash}-{evidenceId:N}";
+                finalPath = Path.Combine(casePath, storedName);
                 File.Move(tempPath, finalPath);
+                var duplicate = item.Evidence.FirstOrDefault(x => x.Sha256.Equals(hash, StringComparison.OrdinalIgnoreCase));
                 var evidence = new EvidenceItem
                 {
                     Id = evidenceId, Identifier = $"{item.Folio}-E{item.Evidence.Count + 1:D3}", Description = input.Description.Trim(),
                     SourceType = input.SourceType.Trim(), SourceLocation = input.SourceLocation.Trim(), OriginalFileName = Path.GetFileName(input.File.FileName),
-                    StoredFileName = storedName, SizeBytes = input.File.Length, Sha256 = hash, AcquiredAtUtc = DateTimeOffset.UtcNow,
-                    AcquiredBy = input.AcquiredBy.Trim(), AcquisitionMethod = input.AcquisitionMethod.Trim(), Status = EvidenceStatus.Verified
+                    StoredFileName = storedName, SizeBytes = new FileInfo(finalPath).Length, Sha256 = hash, AcquiredAtUtc = DateTimeOffset.UtcNow,
+                    AcquiredBy = input.AcquiredBy.Trim(), AcquisitionMethod = input.AcquisitionMethod.Trim(), Status = EvidenceStatus.Verified,
+                    Classification = EvidenceClassification.Original, DetectedFileType = detectedType, DetectedMimeType = mime,
+                    DuplicateOfEvidenceId = duplicate?.Id, ArchiveEntryCount = archiveResult?.EntryCount, ArchiveExpandedBytes = archiveResult?.ExpandedBytes
+                };
+                evidence.AcquisitionWorksheet = new AcquisitionWorksheet
+                {
+                    Source = evidence.SourceLocation, DeviceIdentifier = input.SourceDeviceIdentifier.Trim(), ToolName = input.ToolName.Trim(), ToolVersion = input.ToolVersion.Trim(),
+                    Operator = evidence.AcquiredBy, StartedAtUtc = acquisitionStarted, CompletedAtUtc = DateTimeOffset.UtcNow, Method = evidence.AcquisitionMethod,
+                    Limitations = input.AcquisitionLimitations.Trim(), Verification = $"SHA-256 {hash}; tipo {detectedType}; MIME {mime}."
                 };
                 evidence.ChainOfCustody.Add(new CustodyEvent { Action = "Adquisición y verificación SHA-256", PerformedBy = evidence.AcquiredBy, Location = evidence.SourceLocation, Notes = $"Hash {hash}" });
                 item.Evidence.Add(evidence);
                 item.Status = CaseStatus.Acquiring;
                 AppendAudit(item, evidence.AcquiredBy, "EVIDENCE_ACQUIRED", $"{evidence.Identifier}; SHA-256 {hash}");
-                await SaveAsync(cancellationToken);
+                await SaveAsync(acquisitionToken);
                 return OperationResult.Ok($"Evidencia {evidence.Identifier} preservada y verificada.");
+            }
+            catch (IOException)
+            {
+                item.Evidence.RemoveAll(x => x.Id == evidenceId);
+                if (item.AuditTrail.Count > previousAuditCount) item.AuditTrail.RemoveRange(previousAuditCount, item.AuditTrail.Count - previousAuditCount);
+                item.Status = previousStatus;
+                if (finalPath is not null && File.Exists(finalPath)) File.Delete(finalPath);
+                return OperationResult.Fail("El flujo de evidencia terminó de forma inesperada; no se preservó un archivo parcial.");
+            }
+            catch
+            {
+                item.Evidence.RemoveAll(x => x.Id == evidenceId);
+                if (item.AuditTrail.Count > previousAuditCount) item.AuditTrail.RemoveRange(previousAuditCount, item.AuditTrail.Count - previousAuditCount);
+                item.Status = previousStatus;
+                if (finalPath is not null && File.Exists(finalPath)) File.Delete(finalPath);
+                throw;
             }
             finally { if (File.Exists(tempPath)) File.Delete(tempPath); }
         }
@@ -496,6 +551,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
     {
         await using var connection = OpenConnection();
         await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(token);
+        var committedVersions = new Dictionary<Guid, long>();
         foreach (var item in _cases)
         {
             var json = JsonSerializer.Serialize(item, JsonOptions);
@@ -512,7 +568,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                 update.Parameters.AddWithValue("$version", version);
                 if (await update.ExecuteNonQueryAsync(token) != 1)
                     throw new InvalidOperationException($"Conflicto de concurrencia al guardar el expediente {item.Folio}.");
-                _rowVersions[item.Id] = version + 1;
+                committedVersions[item.Id] = version + 1;
             }
             else
             {
@@ -524,12 +580,13 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                     """;
                 AddCaseParameters(insert, item, json);
                 await insert.ExecuteNonQueryAsync(token);
-                _rowVersions[item.Id] = 1;
+                committedVersions[item.Id] = 1;
             }
 
             await ReplaceIntegrityRowsAsync(connection, transaction, item, token);
         }
         await transaction.CommitAsync(token);
+        foreach (var version in committedVersions) _rowVersions[version.Key] = version.Value;
     }
 
     private SqliteConnection OpenConnection()
@@ -617,6 +674,22 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         using var sha = SHA256.Create();
         return Convert.ToHexString(await sha.ComputeHashAsync(stream, token)).ToLowerInvariant();
     }
+
+    private static async Task<(string Type, string Mime)> DetectTypeAsync(string path, CancellationToken token)
+    {
+        var header = new byte[16];
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 16, true);
+        var count = await stream.ReadAsync(header, token);
+        if (HeaderStartsWith(header, count, new byte[] { 0x50, 0x4B, 0x03, 0x04 }) || HeaderStartsWith(header, count, new byte[] { 0x50, 0x4B, 0x05, 0x06 })) return ("ZIP", "application/zip");
+        if (HeaderStartsWith(header, count, "%PDF-"u8)) return ("PDF", "application/pdf");
+        if (HeaderStartsWith(header, count, new byte[] { 0x7F, (byte)'E', (byte)'L', (byte)'F' })) return ("ELF", "application/x-elf");
+        if (HeaderStartsWith(header, count, "MZ"u8)) return ("PE", "application/vnd.microsoft.portable-executable");
+        if (HeaderStartsWith(header, count, new byte[] { 0x1F, 0x8B })) return ("GZIP", "application/gzip");
+        if (HeaderStartsWith(header, count, "SQLite format 3\0"u8)) return ("SQLite", "application/vnd.sqlite3");
+        return ("Unknown", "application/octet-stream");
+    }
+
+    private static bool HeaderStartsWith(byte[] header, int count, ReadOnlySpan<byte> signature) => count >= signature.Length && header.AsSpan(0, signature.Length).SequenceEqual(signature);
 
     private static string HashText(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
 }
