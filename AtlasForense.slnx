@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="AtlasForense.csproj" />
+  <Project Path="AtlasForense.Tests/AtlasForense.Tests.csproj" />
+  <Project Path="AtlasForense.Verifier/AtlasForense.Verifier.csproj" />
 </Solution>

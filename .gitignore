@@ -35,3 +35,10 @@ secrets.json
 *.tmp
 *.temp
 ~$*
+# Runtime forensic data and acquired evidence
+App_Data/cases.json
+App_Data/cases.json.tmp
+App_Data/Evidence/
+App_Data/Backups/
+App_Data/Keys/
+App_Data/Exports/

@@ -1,0 +1,33 @@
+@model IReadOnlyList<ForensicCase>
+@{
+    ViewData["Title"] = "Expedientes";
+    var open = Model.Count(x => x.Status != CaseStatus.Closed);
+}
+<section class="hero-panel">
+    <div>
+        <span class="eyebrow">Plataforma de investigación digital</span>
+        <h1>Atlas Forense</h1>
+        <p>Adquisición verificable, cadena de custodia, análisis correlacionado e informes íntegros en un solo expediente.</p>
+    </div>
+    <a class="btn btn-primary btn-lg" asp-action="Create">Nuevo expediente</a>
+</section>
+<div class="metrics">
+    <article><strong>@Model.Count</strong><span>Expedientes</span></article>
+    <article><strong>@open</strong><span>En proceso</span></article>
+    <article><strong>@Model.Sum(x => x.Evidence.Count)</strong><span>Evidencias</span></article>
+    <article><strong>@Model.Count(x => x.Status == CaseStatus.Closed)</strong><span>Cerrados</span></article>
+</div>
+<section class="panel">
+    <div class="panel-heading"><div><span class="eyebrow">Control operativo</span><h2>Expedientes recientes</h2></div></div>
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state"><h3>No hay expedientes todavía</h3><p>Crea el primero para iniciar la preparación y autorización.</p></div>
+    }
+    else
+    {
+        <div class="table-responsive"><table class="table atlas-table"><thead><tr><th>Folio</th><th>Asunto</th><th>Responsable</th><th>Estado</th><th>Evidencia</th><th></th></tr></thead><tbody>
+        @foreach (var item in Model)
+        {<tr><td><code>@item.Folio</code></td><td><strong>@item.Title</strong><small>@item.RequestingOrganization</small></td><td>@item.LeadExaminer</td><td><span class="status status-@item.Status.ToString().ToLowerInvariant()">@item.Status</span></td><td>@item.Evidence.Count</td><td><a class="btn btn-sm btn-outline-light" asp-action="Details" asp-route-id="@item.Id">Abrir</a></td></tr>}
+        </tbody></table></div>
+    }
+</section>

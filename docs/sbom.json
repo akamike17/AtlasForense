@@ -1,0 +1,2380 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:49439658-031d-4b3a-8875-f602d58d9027",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-08-26T20:27:09Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "authors": [
+            {
+              "name": "CycloneDX"
+            }
+          ],
+          "name": "CycloneDX module for .NET",
+          "version": "6.2.0.0",
+          "externalReferences": [
+            {
+              "url": "https://github.com/CycloneDX/cyclonedx-dotnet",
+              "type": "website"
+            }
+          ]
+        }
+      ]
+    },
+    "component": {
+      "type": "application",
+      "bom-ref": "AtlasForense@0.0.0",
+      "name": "AtlasForense",
+      "version": "0.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/coverlet.collector@6.0.2",
+      "authors": [
+        {
+          "name": "tonerdo"
+        }
+      ],
+      "name": "coverlet.collector",
+      "version": "6.0.2",
+      "description": "Coverlet is a cross platform code coverage library for .NET, with support for line, branch and method coverage.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "9060EC586906992AA906154D05E8AF0592B145D46B40CFBBFC097236E81FAF48D9EC6A437C5642CC094F7EAFF2642DD036D58F7823C65CDF10E13705E1A3D904"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:nuget/coverlet.collector@6.0.2",
+      "externalReferences": [
+        {
+          "url": "https://github.com/coverlet-coverage/coverlet",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/coverlet-coverage/coverlet.git",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.AspNetCore.Mvc.Testing@8.0.22",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.AspNetCore.Mvc.Testing",
+      "version": "8.0.22",
+      "description": "Support for writing functional tests for MVC applications.\n\nThis package was built from the source code at https://github.com/dotnet/aspnetcore/tree/ee417479933278bb5aadc5944706a96b5ef74a5d",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "E15D46BC8164958F959AD450FA1145DEA8F6C685C00DE834D06B773C106F2A2E5B5E47734DECC844AD0C4AC37EF3EEFE96242281B5F41BE069ACFAE504771856"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.AspNetCore.Mvc.Testing@8.0.22",
+      "externalReferences": [
+        {
+          "url": "https://asp.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/aspnetcore",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.AspNetCore.TestHost@8.0.22",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.AspNetCore.TestHost",
+      "version": "8.0.22",
+      "description": "ASP.NET Core web server for writing and running tests.\n\nThis package was built from the source code at https://github.com/dotnet/aspnetcore/tree/ee417479933278bb5aadc5944706a96b5ef74a5d",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "B09047D430474807E96D72F7F7CF844784224A295B3E48A64A13F7E6FAFC848CC62BAF5E4A2E16445E11E76DEAC899CD382160F3F1E6CC37D674451BBBAE66DE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.AspNetCore.TestHost@8.0.22",
+      "externalReferences": [
+        {
+          "url": "https://asp.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/aspnetcore",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.CodeCoverage@17.12.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.CodeCoverage",
+      "version": "17.12.0",
+      "description": "Microsoft.CodeCoverage package brings infra for collecting code coverage from vstest.console.exe and \u0022dotnet test\u0022.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "3CE06A83BF3CAEB2C0A6F9DCCBCAEFB72277CA7B01754D3F4865170FEBCFAB244333F69425B3D95B1D35A9A9462512B519C02B4A4BBC40377D01531AD1390290"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.CodeCoverage@17.12.0",
+      "externalReferences": [
+        {
+          "url": "https://github.com/microsoft/vstest",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/microsoft/vstest",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Data.Sqlite.Core@8.0.22",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Data.Sqlite.Core",
+      "version": "8.0.22",
+      "description": "Microsoft.Data.Sqlite is a lightweight ADO.NET provider for SQLite. This package does not include a copy of the native SQLite library.\n\nCommonly Used Types:\nMicrosoft.Data.Sqlite.SqliteCommand\nMicrosoft.Data.Sqlite.SqliteConnection\nMicrosoft.Data.Sqlite.SqliteConnectionStringBuilder\nMicrosoft.Data.Sqlite.SqliteDataReader\nMicrosoft.Data.Sqlite.SqliteException\nMicrosoft.Data.Sqlite.SqliteFactory\nMicrosoft.Data.Sqlite.SqliteParameter\nMicrosoft.Data.Sqlite.SqliteTransaction",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "C5F6847D34C5D893975F180F418B241A7E850BEB68957EC5C9B963C802859D647105AE6DDB9E5C8768362FD14BBCD6B99178D8F538150D646FB7B663F0AA46AA"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Data.Sqlite.Core@8.0.22",
+      "externalReferences": [
+        {
+          "url": "https://docs.microsoft.com/dotnet/standard/data/sqlite/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/efcore",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Configuration",
+      "version": "8.0.0",
+      "description": "Implementation of key-value pair based configuration for Microsoft.Extensions.Configuration. Includes the memory configuration provider.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "DA48A8EF3B4CD2A6BEB78008382D9FCCDCDD42FF3A71D9EFC5AC69D4020421294AC95B07CF11520341A69EE241925CD040D49A382DF243E2FA194F6896EF9734"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Configuration.Abstractions",
+      "version": "8.0.0",
+      "description": "Provides abstractions of key-value pair based configuration. Interfaces defined in this package are implemented by classes in Microsoft.Extensions.Configuration and other configuration packages.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "3316170910A94290C8DF4FED26FA884A47DD9BF974EB7AD22368D5A63308660A01D2DAB4A44662061DACAECCF4BA09CDABFCCD4636F76AB3178BECEC5AD31A2F"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Configuration.Binder@8.0.2",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Configuration.Binder",
+      "version": "8.0.2",
+      "description": "Provides the functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration. This package enables you to represent the configuration data as strongly-typed classes defined in the application code. To bind a configuration, use the Microsoft.Extensions.Configuration.ConfigurationBinder.Get extension method on the IConfiguration object. To use this package, you also need to install a package for the configuration provider, for example, Microsoft.Extensions.Configuration.Json for the JSON provider.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "63F5D5D0F5DF1C7F90A138C75E14D81F3598AF78C2C736A7AEF5035FFCF9D40AC5A133571935A08290CEB92DB72357C8203261165F8F7F057C450B2C611F6C2A"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Configuration.Binder@8.0.2",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Configuration.CommandLine@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Configuration.CommandLine",
+      "version": "8.0.0",
+      "description": "Command line configuration provider implementation for Microsoft.Extensions.Configuration. This package enables you to read configuration parameters from the command line arguments of your application. You can use CommandLineConfigurationExtensions.AddCommandLine extension method on IConfigurationBuilder to add the command line configuration provider to the configuration builder.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "85ECC80ECA2C9A6A4676E2E166BE55C0B1AC3020490ED125F03E39B2D57D7E017BA30152C7754CA80759E9EA81FCA0E4E43D2CE8CB2B4748A953628CA0E449EE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Configuration.CommandLine@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Configuration.EnvironmentVariables@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Configuration.EnvironmentVariables",
+      "version": "8.0.0",
+      "description": "Environment variables configuration provider implementation for Microsoft.Extensions.Configuration. This package enables you to read configuration parameters from environment variables. You can use EnvironmentVariablesExtensions.AddEnvironmentVariables extension method on IConfigurationBuilder to add the environment variables configuration provider to the configuration builder.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "E7E284B1AF1362DB2AE4EE6DF9FFF7B4766DF63861837FED0019A43388F688158B328B45DC9188EC966BCA8E0F1EFAE0ECA9BE739B41DE24702001942E103DB8"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Configuration.EnvironmentVariables@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Configuration.FileExtensions@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Configuration.FileExtensions",
+      "version": "8.0.1",
+      "description": "Provides a base class for file-based configuration providers used with Microsoft.Extensions.Configuration and extension methods for configuring them.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "A9727A08418460A2C66DA8ED447CD9CA199157E43E22B84FB0D642CFC4B7B74CB577C3BBD7217B6ABC3742FCBA7B8E35F873A1A289EE4315C09CE5F1B94EE9A6"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Configuration.FileExtensions@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Configuration.Json@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Configuration.Json",
+      "version": "8.0.1",
+      "description": "JSON configuration provider implementation for Microsoft.Extensions.Configuration. This package enables you to read your application\u0027s settings from a JSON file. You can use JsonConfigurationExtensions.AddJsonFile extension method on IConfigurationBuilder to add the JSON configuration provider to the configuration builder.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "B61E38D1ACCFADEAE40C670F9414EB360987DB39024D0619986733334A63A88AED9727ED8FBCCD2FB906F1E37F3B3DF8BAF01C1CB819B72F452C559F02CAB37C"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Configuration.Json@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Configuration.UserSecrets@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Configuration.UserSecrets",
+      "version": "8.0.1",
+      "description": "User secrets configuration provider implementation for Microsoft.Extensions.Configuration. User secrets mechanism enables you to override application configuration settings with values stored in the local secrets file. You can use UserSecretsConfigurationExtensions.AddUserSecrets extension method on IConfigurationBuilder to add user secrets provider to the configuration builder.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "F11F29F6514F8B7DDD43AC1EC5BBAD0A72059EC67F27BE1767B705B781826939B8F0DB29520DB692F2E05D575D31DD58526746ADF702985B2537FAFCB39F93AB"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Configuration.UserSecrets@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.DependencyInjection@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.DependencyInjection",
+      "version": "8.0.1",
+      "description": "Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "B6D2C496CE68BF91AC7499EB2A8AAE34347E648B9BE853E535A36044AFCF8173561650ABA33068346F458062F29C8E0C1F5859F73800D512EC0F464DD467D00F"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.DependencyInjection@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "version": "8.0.2",
+      "description": "Abstractions for dependency injection.\n\nCommonly Used Types:\nMicrosoft.Extensions.DependencyInjection.IServiceCollection",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "BA1960EF110AC7387A2A06EEFC02C59CE57B0FE58B3E0CCCB79B1C8F2150105C5D1F4B65E0ED95FF50D70F28142917C6A735B83F4E5406BB1D8F9DD1F9635D7D"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.DependencyModel@8.0.2",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.DependencyModel",
+      "version": "8.0.2",
+      "description": "Provides abstractions for reading \u0060.deps\u0060 files. When a .NET application is compiled, the SDK generates a JSON manifest file (\u0060\u003CApplicationName\u003E.deps.json\u0060) that contains information about application dependencies. You can use \u0060Microsoft.Extensions.DependencyModel\u0060 to read information from this manifest at run time. This is useful when you want to dynamically compile code (for example, using Roslyn Emit API) referencing the same dependencies as your main application.\n\nBy default, the dependency manifest contains information about the application\u0027s target framework and runtime dependencies. Set the PreserveCompilationContext project property to \u0060true\u0060 to additionally include information about reference assemblies used during compilation.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "42A9E54C51B5F99A1D26AE79CE21ACCB5218A600B2534632AA2C2A4CDCAC5D2942D2976F2C915FE8523EC5E390043607AC6B0A530DE9E7CBBAD9E1841ECEA37E"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.DependencyModel@8.0.2",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Diagnostics@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Diagnostics",
+      "version": "8.0.1",
+      "description": "This package includes the default implementation of IMeterFactory and additional extension methods to easily register it with the Dependency Injection framework.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "A668C7DE32C39384A0DCF85ABB12560B2E286441AE269B39EFEA7149BB2E4A90A8949D6F941B9E24B8B3642F15F86B8A968F36183D97695019BD23F0EA7BE237"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Diagnostics@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Diagnostics.Abstractions@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Diagnostics.Abstractions",
+      "version": "8.0.1",
+      "description": "Diagnostic abstractions for Microsoft.Extensions.Diagnostics.\n\nCommonly Used Types:\nMicrosoft.Extensions.Diagnostics.Metrics.IMetricsBuilder\nMicrosoft.Extensions.Diagnostics.Metrics.IMetricsListener\nMicrosoft.Extensions.Diagnostics.Metrics.InstrumentRule\nMicrosoft.Extensions.Diagnostics.Metrics.MeterScope\nMicrosoft.Extensions.Diagnostics.Metrics.MetricsBuilderExtensions\nMicrosoft.Extensions.Diagnostics.Metrics.MetricsOptions",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "267C18CE804B572B17D9256B41C544428C5586C144A6815F864408F08ADA786EC8EC239BB7A89D985571AD3E962FDC4A059511439DB4936C0BDBD660BF002F46"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Diagnostics.Abstractions@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.FileProviders.Abstractions",
+      "version": "8.0.0",
+      "description": "Abstractions of files and directories.\n\nCommonly Used Types:\nMicrosoft.Extensions.FileProviders.IDirectoryContents\nMicrosoft.Extensions.FileProviders.IFileInfo\nMicrosoft.Extensions.FileProviders.IFileProvider",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "FE9AA18F2E819694F20E322C93E075E27BEE2D57DDD5380624FC48A95669C526C270AB5C74F58C6A4721D18ECDB5B2FEBF0315F8794585AE65617831459E2A0B"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.FileProviders.Physical@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.FileProviders.Physical",
+      "version": "8.0.0",
+      "description": "File provider for physical files for Microsoft.Extensions.FileProviders.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "7612261A35B76D0B3A337AB262DE57C3B605E8A1E55BF4D47F15E374E5577AB2CE4AE370980EF2C1335C4E323E6ADCFE3718EEE86570AC6E4FF5CB100450331F"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.FileProviders.Physical@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.FileSystemGlobbing@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.FileSystemGlobbing",
+      "version": "8.0.0",
+      "description": "File system globbing to find files matching a specified pattern.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "23A5E50CF695BA18C7A77F7C050E40D6FB065957480DB17F5E75E5CF269C8F50763C996C28D0DCFCA09E2C1248540898AB53C474CADC705548F5FE491DD263FD"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.FileSystemGlobbing@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Hosting@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Hosting",
+      "version": "8.0.1",
+      "description": "Hosting and startup infrastructures for applications.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "274DE409C0A495EEB540C7868F3E152B83AC48290F18F44DAA160C7F7F76E384E051F176755794A8ED6359ED7431FE3BD3014AE4D20C4ED0CDEA8ECB10CC2388"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Hosting@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Hosting.Abstractions@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Hosting.Abstractions",
+      "version": "8.0.1",
+      "description": "Hosting and startup abstractions for applications.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "4C7EF392FFC0C10A17B3BBC1232954FAC16ED7E7E51AAAEFD1E68F63EB19CA0B409F991BB72B4A1F9E7ECD241F196E579A2A740017CFE08B64C75062D60508E9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Hosting.Abstractions@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Logging",
+      "version": "8.0.1",
+      "description": "Logging infrastructure default implementation for Microsoft.Extensions.Logging.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "AB3363C4E103963EE5013ADA55FDDCD771961E48E5124F41E70589E589DACF27D20CFF7E04BFC214DB79FD937CBAD80E99CEF565F72E0CC10B84D9B3AC0619FD"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Logging.Abstractions",
+      "version": "8.0.2",
+      "description": "Logging abstractions for Microsoft.Extensions.Logging.\n\nCommonly Used Types:\nMicrosoft.Extensions.Logging.ILogger\nMicrosoft.Extensions.Logging.ILoggerFactory\nMicrosoft.Extensions.Logging.ILogger\u003CTCategoryName\u003E\nMicrosoft.Extensions.Logging.LogLevel\nMicrosoft.Extensions.Logging.Logger\u003CT\u003E\nMicrosoft.Extensions.Logging.LoggerMessage\nMicrosoft.Extensions.Logging.Abstractions.NullLogger",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "F8B9DF3FA7B837CB5F2FA53A86BFD47279F81BC332DB55B8BB7EA14F55DFE2158F351D35199C0CC0E01C735F394DED2A3A8F1C85C3FF6EA1C3AB785BFBF362FD"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Logging.Configuration@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Logging.Configuration",
+      "version": "8.0.1",
+      "description": "Configuration support for Microsoft.Extensions.Logging.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "3A114EA60F001EA3EFE95929989ABC1DFAA8C43BE50DCBB3E457DD33AD97B79F1DA28DB045C530357C41507792477CF7BFE61B0B36D4DD29374B9F63D7C4960A"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Logging.Configuration@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Logging.Console@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Logging.Console",
+      "version": "8.0.1",
+      "description": "Console logger provider implementation for Microsoft.Extensions.Logging.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "742CC7614CAE55FD95E88DFF7F9286CE066B9A1133962E5DFF04F252D8B208BC2945B03A05A9ECC5D5253230221D3FC649FE14EC6F57F614522715C1D501DAA0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Logging.Console@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Logging.Debug@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Logging.Debug",
+      "version": "8.0.1",
+      "description": "Debug output logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a debugger monitor by writing messages with System.Diagnostics.Debug.WriteLine().",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "288C59DF3801D1AB34F9AC265B245703006EC0C455FEE3A07BAF4776AD5C8E3FF5FA68D2153FA6353889B921EC8E7E260154F22D81233646BF96D365AE3AF5E1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Logging.Debug@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Logging.EventLog@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Logging.EventLog",
+      "version": "8.0.1",
+      "description": "Windows Event Log logger provider implementation for Microsoft.Extensions.Logging.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "5CF824B05FBE094702AE320885DC75D0386973DEB8120875177E2A68127C255CD7EB9521C204924D7FD41B012CEFD9147045DE597018DB43482BD1755DC88F3F"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Logging.EventLog@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Logging.EventSource@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Logging.EventSource",
+      "version": "8.0.1",
+      "description": "EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "6302DEB4BB0EF979134EF36B7F99DA71B8D3CE72646DBF1EDE16C4DB328C37EA62F0C39FEB4BE46FE9F9CEBF4E8F2B4671313AB38A7C3B39A6400F83985DF4A3"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Logging.EventSource@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Options@8.0.2",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Options",
+      "version": "8.0.2",
+      "description": "Provides a strongly typed way of specifying and accessing settings using dependency injection.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "CC0C10336580C9519740A042B1E42D391BCB32B63732163AE1161E1C5B55A4CD4A736E1902EB2A4DBB89D784B0ACF584B5042B4F3481A61DD30A4E229FB523C5"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Options@8.0.2",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Options.ConfigurationExtensions@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Options.ConfigurationExtensions",
+      "version": "8.0.0",
+      "description": "Provides additional configuration specific functionality related to Options.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "5C32AE67AE4E873216BBBEC15554778E0ACBEBC283862A2DEBCB11A995C42A5FD75F9436C8DA421AA51BC5C12DB4E6C4E82F12DA1FF942BC5A6E1A8CF3C77A7D"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Options.ConfigurationExtensions@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.Extensions.Primitives",
+      "version": "8.0.0",
+      "description": "Primitives shared by framework extensions. Commonly used types include:\n\nCommonly Used Types:\nMicrosoft.Extensions.Primitives.IChangeToken\nMicrosoft.Extensions.Primitives.StringValues\nMicrosoft.Extensions.Primitives.StringSegment",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "1F5475CA3D3CE18463456DD135AFAC502D6F82FEA6E4E4814A61F86616C348DECF28B73D15C2BB276D1A3C039EA6064F75E1329F6F3A64CAA3520D70AB92C32D"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.NET.Test.Sdk@17.12.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.NET.Test.Sdk",
+      "version": "17.12.0",
+      "description": "The MSbuild targets and properties for building .NET test projects.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "8467FC23CFB2A35E5EB5ABE831DFBB39770E1BAFC6EC760F0C4260E5A42784CCECC5A529ABEB9D359CD2C6610DF6B19358C64E01515CC8D5CD2FB601B0DE9C87"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.NET.Test.Sdk@17.12.0",
+      "externalReferences": [
+        {
+          "url": "https://github.com/microsoft/vstest",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/microsoft/vstest",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.TestPlatform.ObjectModel@17.12.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.TestPlatform.ObjectModel",
+      "version": "17.12.0",
+      "description": "The Microsoft Test Platform Object Model.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "925B1732000F356628DDC79A90B928778C18AE4E25015D84862EBBEB350A822569439623EAADEFB0C864FF7A66F7B2ED93F85D7125B4AC9289BDC42F4F33E060"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.TestPlatform.ObjectModel@17.12.0",
+      "externalReferences": [
+        {
+          "url": "https://github.com/microsoft/vstest",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/microsoft/vstest",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Microsoft.TestPlatform.TestHost@17.12.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "Microsoft.TestPlatform.TestHost",
+      "version": "17.12.0",
+      "description": "Testplatform host executes the test using specified adapter.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "81833604E190BC510FD9F66DEB57F77F91AEFA298BD46D5BBC652B6C98E961C97AE91EAECECE721128345CC9FC22052095DCFC46574E39A6268E4D8A712786D5"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/Microsoft.TestPlatform.TestHost@17.12.0",
+      "externalReferences": [
+        {
+          "url": "https://github.com/microsoft/vstest",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/microsoft/vstest",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/Newtonsoft.Json@13.0.1",
+      "authors": [
+        {
+          "name": "James Newton-King"
+        }
+      ],
+      "name": "Newtonsoft.Json",
+      "version": "13.0.1",
+      "description": "Json.NET is a popular high-performance JSON framework for .NET",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "83731B662EAF05379A23F8446EF47BBC111349DD4358B7BD8B51383FE9CF637E2FE62F78CEA52A0D7BDD582DC6FBBB5837D4A7B1D53DCF37A0AE7473E21EE7B1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "Copyright \u00A9 James Newton-King 2008",
+      "purl": "pkg:nuget/Newtonsoft.Json@13.0.1",
+      "externalReferences": [
+        {
+          "url": "https://www.newtonsoft.com/json",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/JamesNK/Newtonsoft.Json",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/SQLitePCLRaw.core@2.1.11",
+      "authors": [
+        {
+          "name": "Eric Sink"
+        }
+      ],
+      "name": "SQLitePCLRaw.core",
+      "version": "2.1.11",
+      "description": "SQLitePCL.raw is a Portable Class Library (PCL) for low-level (raw) access to SQLite.  This package does not provide an API which is friendly to app developers.  Rather, it provides an API which handles platform and configuration issues, upon which a friendlier API can be built.  In order to use this package, you will need to also add one of the SQLitePCLRaw.provider.* packages and call raw.SetProvider().  Convenience packages are named SQLitePCLRaw.bundle_*.",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "0F5D108F19BCF1A0DF06A6BC1885724F1C0F5A76426AA38461E85523746167E5B60B1081D57046C03FB44D395FA4CE936D3E2A44E9D20DCACEBEE671B7AE0340"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright 2014-2024 SourceGear, LLC",
+      "purl": "pkg:nuget/SQLitePCLRaw.core@2.1.11",
+      "externalReferences": [
+        {
+          "url": "https://github.com/ericsink/SQLitePCL.raw",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/SQLitePCLRaw.provider.sqlite3@2.1.11",
+      "authors": [
+        {
+          "name": "Eric Sink"
+        }
+      ],
+      "name": "SQLitePCLRaw.provider.sqlite3",
+      "version": "2.1.11",
+      "description": "SQLitePCL.raw is a Portable Class Library (PCL) for low-level (raw) access to SQLite.  Packages named \u0027SQLitePCLRaw.provider.*\u0027 (like this one) are \u0027plugins\u0027 that allow SQLitePCLRaw.core to access the native SQLite library.  This provider does DllImport of \u0027sqlite3\u0027, to reference the \u0027system\u0027 SQLite.  One common use for this provider is to access the SQLite library provided with iOS.",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "0A0F2BB2543D2159648E610F58E15E236EB84D8642E92B5CEDA7164995EB6C108FCB94B91FAD37E3C7388BF9C48EE6C81F3259DD871DB29ECDE0EA132ED8FD4A"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright 2014-2024 SourceGear, LLC",
+      "purl": "pkg:nuget/SQLitePCLRaw.provider.sqlite3@2.1.11",
+      "externalReferences": [
+        {
+          "url": "https://github.com/ericsink/SQLitePCL.raw",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/SQLitePCLRaw.provider.winsqlite3@2.1.11",
+      "authors": [
+        {
+          "name": "Eric Sink"
+        }
+      ],
+      "name": "SQLitePCLRaw.provider.winsqlite3",
+      "version": "2.1.11",
+      "description": "SQLitePCL.raw is a Portable Class Library (PCL) for low-level (raw) access to SQLite.  Packages named \u0027SQLitePCLRaw.provider.*\u0027 (like this one) are \u0027plugins\u0027 that allow SQLitePCLRaw.core to access the native SQLite library.  This provider does DllImport of \u0027winsqlite3\u0027, the SQLite libary provided with Windows 10.",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "34C021E06B1EBAE8CBFFE8EBF0CBD103068A9BD3AFDB87E38E1FA2DF374C9A88858D899F82A72EA84E6D2AC00577CB37B0BDE833BFDD3B8DFEF162ADAC988873"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright 2014-2024 SourceGear, LLC",
+      "purl": "pkg:nuget/SQLitePCLRaw.provider.winsqlite3@2.1.11",
+      "externalReferences": [
+        {
+          "url": "https://github.com/ericsink/SQLitePCL.raw",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/System.Diagnostics.EventLog@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "System.Diagnostics.EventLog",
+      "version": "8.0.1",
+      "description": "Provides the System.Diagnostics.EventLog class, which allows the applications to use the Windows event log service.\n\nCommonly Used Types:\nSystem.Diagnostics.EventLog",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "2C636B40EC9C85AADA16E64E3CFC407E78FFDF3862C86C154C861A50CF547DE7BC1CFC985FAD32AFD32DC465A80C4E1E0316C93834D700A9745B68CA856C36DA"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/System.Diagnostics.EventLog@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/System.IO.Pipelines@8.0.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "System.IO.Pipelines",
+      "version": "8.0.0",
+      "description": "Single producer single consumer byte buffer management.\n\nCommonly Used Types:\nSystem.IO.Pipelines.Pipe\nSystem.IO.Pipelines.PipeWriter\nSystem.IO.Pipelines.PipeReader",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "57EB6A11E84F40A48B57B1DC5786A01AA9852122B7D15363490D8A12C9A458BF99A8DDF4C0C0247BE98559C2B42E769A10BDA2C5A9817735484D960DC652EB12"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/System.IO.Pipelines@8.0.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/System.Memory@4.5.3",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "System.Memory",
+      "version": "4.5.3",
+      "description": "Provides types for efficient representation and pooling of managed, stack, and native memory segments and sequences of such segments, along with primitives to parse and format UTF-8 encoded text stored in those memory segments.\n\nCommonly Used Types:\nSystem.Span\nSystem.ReadOnlySpan\nSystem.Memory\nSystem.ReadOnlyMemory\nSystem.Buffers.MemoryPool\nSystem.Buffers.ReadOnlySequence\nSystem.Buffers.Text.Utf8Parser\nSystem.Buffers.Text.Utf8Formatter\n \nc6cf790234e063b855fcdb50f3fb1b3cfac73275 \nWhen using NuGet 3.x this package requires at least version 3.4.",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "70FCE15A52CC76AACBAE05C8E89E2E398D1D32903F63F640A7DD4A3E5747F2C7A887D4BFD22F2A2E40274906CF91648DFD169734FB7C74EB9B4F72614084E1DB"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "Unknown - See URL",
+            "url": "https://github.com/dotnet/corefx/blob/master/LICENSE.TXT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/System.Memory@4.5.3",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/System.Reflection.Metadata@1.6.0",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "System.Reflection.Metadata",
+      "version": "1.6.0",
+      "description": "This packages provides a low-level .NET (ECMA-335) metadata reader and writer. It\u0027s geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers.\n\nCommonly Used Types:\nSystem.Reflection.Metadata.MetadataReader\nSystem.Reflection.PortableExecutable.PEReader\nSystem.Reflection.Metadata.Ecma335.MetadataBuilder\nSystem.Reflection.PortableExecutable.PEBuilder\nSystem.Reflection.PortableExecutable.ManagedPEBuilder\n \n30ab651fcb4354552bd4891619a0bdd81e0ebdbf \nWhen using NuGet 3.x this package requires at least version 3.4.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "F5227666EDC6BB1DA78B8A8E86A68E9BD647CAA2EC6A1580C14A4A5E1FE5CFDE3BDAF0D8C23DC210C405A55F83CEB6ADD1A9ADAB149DC065B38CFDDC9B01BA20"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "Unknown - See URL",
+            "url": "https://github.com/dotnet/corefx/blob/master/LICENSE.TXT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation.  All rights reserved.",
+      "purl": "pkg:nuget/System.Reflection.Metadata@1.6.0",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/System.Security.Cryptography.Pkcs@8.0.1",
+      "authors": [
+        {
+          "name": "Microsoft"
+        }
+      ],
+      "name": "System.Security.Cryptography.Pkcs",
+      "version": "8.0.1",
+      "description": "Provides support for PKCS and CMS algorithms.\n\nCommonly Used Types:\nSystem.Security.Cryptography.Pkcs.EnvelopedCms",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "31B0606701DCE4008B189DBC0BCFA0D855A2DEB2EC83A3D3150D81DB001955F81B6D1BFC30FAD953E75C5704B478830006BA81C7B84BDF9A50E8241055CA6450"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "\u00A9 Microsoft Corporation. All rights reserved.",
+      "purl": "pkg:nuget/System.Security.Cryptography.Pkcs@8.0.1",
+      "externalReferences": [
+        {
+          "url": "https://dot.net/",
+          "type": "website"
+        },
+        {
+          "url": "https://github.com/dotnet/runtime",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/xunit@2.9.3",
+      "authors": [
+        {
+          "name": "jnewkirk,bradwilson"
+        }
+      ],
+      "name": "xunit",
+      "version": "2.9.3",
+      "description": "xUnit.net is a developer testing framework, built to support Test Driven Development, with a design goal of extreme simplicity and alignment with framework features.\n\nInstalling this package installs xunit.core, xunit.assert, and xunit.analyzers.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "DFF6B254F0BB35059010D4794446CE81762C6E1A09B26A67C506B9A4EE25C5B8C66DC90EB3ADA7B26E242C4AF373C9E0ED5E57CF4F2EC158CCA9A6462625C2AE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright (C) .NET Foundation",
+      "purl": "pkg:nuget/xunit@2.9.3",
+      "externalReferences": [
+        {
+          "url": "https://github.com/xunit/xunit",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/xunit.abstractions@2.0.3",
+      "authors": [
+        {
+          "name": "James Newkirk,Brad Wilson"
+        }
+      ],
+      "name": "xunit.abstractions",
+      "version": "2.0.3",
+      "description": "Common abstractions used to exchange information between xUnit.net and version-independent runners (xunit.abstractions.dll).",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "3CA26B8B97F4A8440F16F818E82651F571BC2513A5592742FD960B9240D0B880FEF84827FB25A307E61FE7B019F14E864653FBCF7DEE0D0E3FAF90593DEAF624"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "Unknown - See URL",
+            "url": "https://raw.githubusercontent.com/xunit/xunit/master/license.txt"
+          }
+        }
+      ],
+      "purl": "pkg:nuget/xunit.abstractions@2.0.3",
+      "externalReferences": [
+        {
+          "url": "https://github.com/xunit/xunit",
+          "type": "website"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/xunit.analyzers@1.18.0",
+      "authors": [
+        {
+          "name": "jnewkirk,bradwilson,marcind"
+        }
+      ],
+      "name": "xunit.analyzers",
+      "version": "1.18.0",
+      "description": "xUnit.net is a developer testing framework, built to support Test Driven Development, with a design goal of extreme simplicity and alignment with framework features.\n\nInstalling this package provides code analyzers to help developers find and fix frequent issues when writing tests and xUnit.net extensibility code.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "632F6D380CD59DC1356AF0361AB389A14C53993E9F40939CAB1B20F5FE773B1ED8ED5FFF06D438195F7383BAA7A8CCF2CF299A6EB889E7948629BD4729B3CE38"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright (C) .NET Foundation",
+      "purl": "pkg:nuget/xunit.analyzers@1.18.0",
+      "externalReferences": [
+        {
+          "url": "https://github.com/xunit/xunit.analyzers",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/xunit.assert@2.9.3",
+      "authors": [
+        {
+          "name": "jnewkirk,bradwilson"
+        }
+      ],
+      "name": "xunit.assert",
+      "version": "2.9.3",
+      "description": "Includes the assertion library from xUnit.net (xunit.assert.dll). Supports .NET Standard 1.1\u002B and .NET 6.0\u002B.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "C1FAB008A0214961B2F4FFDD3EA0C64880673D6DEC509E3D3047DC4EA345FB90602708F0B476FD484EDA8D866E47CCA64DDF1DC31A041A79491E27A36E00EFF7"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright (C) .NET Foundation",
+      "purl": "pkg:nuget/xunit.assert@2.9.3",
+      "externalReferences": [
+        {
+          "url": "https://github.com/xunit/xunit",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/xunit.core@2.9.3",
+      "authors": [
+        {
+          "name": "jnewkirk,bradwilson"
+        }
+      ],
+      "name": "xunit.core",
+      "version": "2.9.3",
+      "description": "Includes the libraries for writing unit tests with xUnit.net.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "72FDAC3B7EEA26421B04BDDF5C3227DC43D0DB32BC2D0E8590C24D9E7D7173D9FC9A8DE293451103831F50D0A6C030C2C7CDD9889791AC9D32D7291AB288CD26"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright (C) .NET Foundation",
+      "purl": "pkg:nuget/xunit.core@2.9.3",
+      "externalReferences": [
+        {
+          "url": "https://github.com/xunit/xunit",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/xunit.extensibility.core@2.9.3",
+      "authors": [
+        {
+          "name": "jnewkirk,bradwilson"
+        }
+      ],
+      "name": "xunit.extensibility.core",
+      "version": "2.9.3",
+      "description": "Includes xunit.core.dll for extensibility purposes. Supports .NET 4.5.2 or later, and .NET Standard 1.1.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "4B46BE8E6205FC3ADA2AE27E15F59BA97330BE970AC633F719DAD0CF3E69AF7198B60208D977C374086453FE55216A96A27D91E90DF55FFF6C4C6694FA4A0369"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright (C) .NET Foundation",
+      "purl": "pkg:nuget/xunit.extensibility.core@2.9.3",
+      "externalReferences": [
+        {
+          "url": "https://github.com/xunit/xunit",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/xunit.extensibility.execution@2.9.3",
+      "authors": [
+        {
+          "name": "jnewkirk,bradwilson"
+        }
+      ],
+      "name": "xunit.extensibility.execution",
+      "version": "2.9.3",
+      "description": "Includes xunit.execution.*.dll for extensibility purposes. Supports .NET 4.5.2 or later, and .NET Standard 1.1.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "222768052AC6C3F2A15B366C29721C4ADA218FFA111598B36D6794BFED213852DE30931E8125B942818DCE68D0B85F01B91B42C8F410BA459261D3679DF3C090"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright (C) .NET Foundation",
+      "purl": "pkg:nuget/xunit.extensibility.execution@2.9.3",
+      "externalReferences": [
+        {
+          "url": "https://github.com/xunit/xunit",
+          "type": "vcs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:nuget/xunit.runner.visualstudio@2.8.2",
+      "authors": [
+        {
+          "name": "jnewkirk,bradwilson"
+        }
+      ],
+      "name": "xunit.runner.visualstudio",
+      "version": "2.8.2",
+      "description": "Visual Studio 2022\u002B Test Explorer runner for the xUnit.net framework. Capable of running xUnit.net v1.9.2 and v2.0\u002B tests. Supports .NET 4.6.2 or later, and .NET 6 or later.",
+      "scope": "excluded",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "CFE133857C4B9609FF9FB150E49D032716C69ECFF5BF1D643C987852AF8E3C2851A5D4B2DF1FCC0AA43F8ED91BA1CEC144CB61CF5E24EE92F40F78AAFDEE1DD0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright (C) .NET Foundation",
+      "purl": "pkg:nuget/xunit.runner.visualstudio@2.8.2",
+      "externalReferences": [
+        {
+          "url": "https://github.com/xunit/visualstudio.xunit",
+          "type": "vcs"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "AtlasForense@0.0.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Data.Sqlite.Core@8.0.22",
+        "pkg:nuget/SQLitePCLRaw.provider.sqlite3@2.1.11",
+        "pkg:nuget/SQLitePCLRaw.provider.winsqlite3@2.1.11",
+        "pkg:nuget/System.Security.Cryptography.Pkcs@8.0.1",
+        "pkg:nuget/coverlet.collector@6.0.2",
+        "pkg:nuget/Microsoft.AspNetCore.Mvc.Testing@8.0.22",
+        "pkg:nuget/Microsoft.NET.Test.Sdk@17.12.0",
+        "pkg:nuget/xunit@2.9.3",
+        "pkg:nuget/xunit.runner.visualstudio@2.8.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/coverlet.collector@6.0.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.AspNetCore.Mvc.Testing@8.0.22",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.AspNetCore.TestHost@8.0.22",
+        "pkg:nuget/Microsoft.Extensions.DependencyModel@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Hosting@8.0.1"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.AspNetCore.TestHost@8.0.22",
+      "dependsOn": [
+        "pkg:nuget/System.IO.Pipelines@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.CodeCoverage@17.12.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Data.Sqlite.Core@8.0.22",
+      "dependsOn": [
+        "pkg:nuget/SQLitePCLRaw.core@2.1.11"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Configuration.Binder@8.0.2",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Configuration.CommandLine@8.0.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Configuration.EnvironmentVariables@8.0.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Configuration.FileExtensions@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Physical@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Configuration.Json@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.FileExtensions@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Configuration.UserSecrets@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Json@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Physical@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.DependencyInjection@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.DependencyModel@8.0.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Diagnostics.Abstractions@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Options@8.0.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Diagnostics@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Diagnostics.Abstractions@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Options.ConfigurationExtensions@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.FileProviders.Physical@8.0.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.FileSystemGlobbing@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.FileSystemGlobbing@8.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Hosting.Abstractions@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Diagnostics.Abstractions@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Hosting@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Binder@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Configuration.CommandLine@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.EnvironmentVariables@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.FileExtensions@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Json@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Configuration.UserSecrets@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Diagnostics@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.FileProviders.Physical@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Hosting.Abstractions@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Logging.Configuration@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Console@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Debug@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.EventLog@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.EventSource@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Options@8.0.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Logging.Configuration@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Binder@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Options@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Options.ConfigurationExtensions@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Logging.Console@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Logging.Configuration@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Options@8.0.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Logging.Debug@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Logging.EventLog@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Options@8.0.2",
+        "pkg:nuget/System.Diagnostics.EventLog@8.0.1"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Logging.EventSource@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Options@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Logging@8.0.1",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection@8.0.1",
+        "pkg:nuget/Microsoft.Extensions.Logging.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Options@8.0.2"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Options.ConfigurationExtensions@8.0.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.Configuration.Abstractions@8.0.0",
+        "pkg:nuget/Microsoft.Extensions.Configuration.Binder@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Options@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Options@8.0.2",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.Extensions.DependencyInjection.Abstractions@8.0.2",
+        "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.Extensions.Primitives@8.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.NET.Test.Sdk@17.12.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.CodeCoverage@17.12.0",
+        "pkg:nuget/Microsoft.TestPlatform.TestHost@17.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.TestPlatform.ObjectModel@17.12.0",
+      "dependsOn": [
+        "pkg:nuget/System.Reflection.Metadata@1.6.0"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Microsoft.TestPlatform.TestHost@17.12.0",
+      "dependsOn": [
+        "pkg:nuget/Microsoft.TestPlatform.ObjectModel@17.12.0",
+        "pkg:nuget/Newtonsoft.Json@13.0.1"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/Newtonsoft.Json@13.0.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/SQLitePCLRaw.core@2.1.11",
+      "dependsOn": [
+        "pkg:nuget/System.Memory@4.5.3"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/SQLitePCLRaw.provider.sqlite3@2.1.11",
+      "dependsOn": [
+        "pkg:nuget/SQLitePCLRaw.core@2.1.11"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/SQLitePCLRaw.provider.winsqlite3@2.1.11",
+      "dependsOn": [
+        "pkg:nuget/SQLitePCLRaw.core@2.1.11"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/System.Diagnostics.EventLog@8.0.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/System.IO.Pipelines@8.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/System.Memory@4.5.3",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/System.Reflection.Metadata@1.6.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/System.Security.Cryptography.Pkcs@8.0.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/xunit.abstractions@2.0.3",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/xunit.analyzers@1.18.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/xunit.assert@2.9.3",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/xunit.core@2.9.3",
+      "dependsOn": [
+        "pkg:nuget/xunit.extensibility.core@2.9.3",
+        "pkg:nuget/xunit.extensibility.execution@2.9.3"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/xunit.extensibility.core@2.9.3",
+      "dependsOn": [
+        "pkg:nuget/xunit.abstractions@2.0.3"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/xunit.extensibility.execution@2.9.3",
+      "dependsOn": [
+        "pkg:nuget/xunit.extensibility.core@2.9.3"
+      ]
+    },
+    {
+      "ref": "pkg:nuget/xunit.runner.visualstudio@2.8.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:nuget/xunit@2.9.3",
+      "dependsOn": [
+        "pkg:nuget/xunit.analyzers@1.18.0",
+        "pkg:nuget/xunit.assert@2.9.3",
+        "pkg:nuget/xunit.core@2.9.3"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+@model IReadOnlyList<AppUser>
+@{ ViewData["Title"] = "Usuarios"; }
+<div class="page-heading"><div><span class="eyebrow">Administración</span><h1>Usuarios y roles</h1></div><a asp-action="Create" class="btn btn-primary">Crear usuario</a></div>
+<section class="panel"><table class="table"><thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acción</th></tr></thead><tbody>@foreach (var user in Model) { <tr><td>@user.DisplayName<br /><small>@user.UserName</small></td><td>@user.Role</td><td>@(user.Enabled ? "Habilitado" : "Deshabilitado")</td><td><form asp-action="SetEnabled" method="post"><input type="hidden" name="id" value="@user.Id" /><button name="enabled" value="@(!user.Enabled)" class="btn btn-sm btn-outline-light">@(user.Enabled ? "Deshabilitar" : "Habilitar")</button></form></td></tr> }</tbody></table></section>

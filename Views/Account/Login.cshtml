@@ -1,0 +1,14 @@
+@model LoginInput
+@{ ViewData["Title"] = "Acceso"; }
+<div class="page-heading"><div><span class="eyebrow">Acceso protegido</span><h1>Iniciar sesión</h1></div></div>
+<form asp-action="Login" method="post" class="panel form-panel" autocomplete="off">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <input asp-for="ReturnUrl" type="hidden" />
+    <div class="form-grid">
+        <label class="field span-2">Usuario<input asp-for="UserName" class="form-control" autocomplete="username" /></label>
+        <label class="field span-2">Contraseña<input asp-for="Password" type="password" class="form-control" autocomplete="current-password" /></label>
+        <label class="field span-2">Código TOTP o recuperación<input asp-for="MfaCode" class="form-control" autocomplete="one-time-code" /></label>
+    </div>
+    <button class="btn btn-primary">Acceder</button>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,139 @@
+@model ForensicCase
+@{
+    ViewData["Title"] = Model.Folio;
+    var step = Model.Status switch { CaseStatus.Draft => 1, CaseStatus.Authorized or CaseStatus.Acquiring => 2, CaseStatus.Analyzing => 3, _ => 4 };
+    var canExamine = User.IsInRole(nameof(ForensicRole.Administrator)) || User.IsInRole(nameof(ForensicRole.Examiner));
+    var canReview = User.IsInRole(nameof(ForensicRole.Administrator)) || User.IsInRole(nameof(ForensicRole.Reviewer));
+    var canCustody = User.IsInRole(nameof(ForensicRole.Administrator)) || User.IsInRole(nameof(ForensicRole.Custodian));
+    var assignableUsers = ViewBag.AssignableUsers as IReadOnlyList<AppUser> ?? [];
+}
+
+<div class="page-heading">
+    <div><span class="eyebrow">@Model.Folio</span><h1>@Model.Title</h1><p>@Model.Scope</p></div>
+    <span class="status status-@Model.Status.ToString().ToLowerInvariant()">@Model.Status</span>
+</div>
+
+<nav class="stage-nav" aria-label="Progreso forense">
+    @foreach (var entry in new[] { (1, "Adquirir"), (2, "Examinar"), (3, "Analizar"), (4, "Informar") })
+    {
+        <span class="@(step == entry.Item1 ? "active" : step > entry.Item1 ? "done" : string.Empty)">@entry.Item1. @entry.Item2</span>
+    }
+</nav>
+
+<section class="panel">
+    <div class="panel-heading"><div><span class="eyebrow">Acceso por expediente</span><h2>Asignaciones</h2></div><span class="check">@Model.Assignments.Count(x => x.Active)</span></div>
+    <ul>@foreach (var assignment in Model.Assignments.Where(x => x.Active)) { var user = assignableUsers.FirstOrDefault(x => x.Id == assignment.UserId); <li>@(user?.DisplayName ?? assignment.UserId.ToString("D")) — @assignment.Role</li> }</ul>
+    @if (User.IsInRole(nameof(ForensicRole.Administrator)) && Model.Status != CaseStatus.Closed)
+    {
+        <form asp-action="AssignUser" method="post" class="form-grid compact"><input type="hidden" name="CaseId" value="@Model.Id" /><label class="field">Usuario<select name="UserId" class="form-select" required>@foreach (var user in assignableUsers) { <option value="@user.Id">@user.DisplayName — @user.Role</option> }</select></label><label class="field">Rol<select name="Role" class="form-select"><option value="Examiner">Examiner</option><option value="Reviewer">Reviewer</option><option value="Custodian">Custodian</option><option value="Auditor">Auditor</option></select></label><button class="btn btn-primary span-2">Asignar</button></form>
+    }
+</section>
+
+<section class="panel stage-panel @(step == 1 ? "current" : string.Empty)">
+    <div class="panel-heading"><div><span class="eyebrow">Etapa 1</span><h2>Preparación y autorización</h2></div><span class="check">@(Model.Authorization is null ? "Pendiente" : "Completada")</span></div>
+    <div class="summary-grid"><div><small>Examinador</small><strong>@Model.LeadExaminer</strong></div><div><small>Creado UTC</small><strong>@Model.CreatedAtUtc.ToString("u")</strong></div></div>
+    @if (Model.Status == CaseStatus.Draft && canExamine)
+    {
+        <form asp-action="Authorize" method="post" class="form-grid compact">
+            <input type="hidden" name="CaseId" value="@Model.Id" />
+            <label class="field">Autoridad competente<input name="Authority" class="form-control" required maxlength="160" /></label>
+            <label class="field">Orden o referencia<input name="Reference" class="form-control" required maxlength="160" /></label>
+            <label class="field span-2">Limitaciones<input name="Limitations" class="form-control" maxlength="1000" /></label>
+            <button class="btn btn-primary span-2">Autorizar alcance como usuario autenticado</button>
+        </form>
+    }
+</section>
+
+<section class="panel stage-panel @(step == 2 ? "current" : string.Empty)">
+    <div class="panel-heading"><div><span class="eyebrow">Etapa 2</span><h2>Adquisición y preservación</h2></div><span class="check">@Model.Evidence.Count evidencia(s)</span></div>
+    @if ((Model.Status is CaseStatus.Authorized or CaseStatus.Acquiring) && canExamine)
+    {
+        <form asp-action="Acquire" method="post" enctype="multipart/form-data" class="form-grid compact">
+            <input type="hidden" name="CaseId" value="@Model.Id" />
+            <label class="field span-2">Archivo de evidencia, máximo 100 MB<input type="file" name="File" class="form-control" required /></label>
+            <label class="field span-2">Descripción<input name="Description" class="form-control" required maxlength="500" /></label>
+            <label class="field">Tipo de fuente<input name="SourceType" class="form-control" required maxlength="80" /></label>
+            <label class="field">Ubicación de origen<input name="SourceLocation" class="form-control" required maxlength="300" /></label>
+            <label class="field">Método<input name="AcquisitionMethod" class="form-control" required maxlength="200" /></label><label class="field">Dispositivo o fuente<input name="SourceDeviceIdentifier" class="form-control" maxlength="200" /></label>
+            <label class="field">Herramienta<input name="ToolName" class="form-control" required maxlength="120" /></label><label class="field">Versión<input name="ToolVersion" class="form-control" required maxlength="80" /></label>
+            <label class="field span-2">SHA-256 esperado (opcional)<input name="ExpectedSha256" class="form-control code" maxlength="64" pattern="[A-Fa-f0-9]{64}" autocomplete="off" /></label>
+            <label class="field span-2">Limitaciones<textarea name="AcquisitionLimitations" class="form-control" maxlength="1000"></textarea></label>
+            <button class="btn btn-primary span-2">Adquirir y verificar SHA-256</button>
+        </form>
+    }
+    @foreach (var evidence in Model.Evidence)
+    {
+        <article class="evidence-card">
+            <div><span class="eyebrow">@evidence.Identifier</span><h3>@evidence.Description</h3><p>@evidence.OriginalFileName · @evidence.SizeBytes.ToString("N0") bytes</p><code class="hash">SHA-256 @evidence.Sha256</code></div>
+            @if (Model.Status == CaseStatus.Analyzing && canExamine)
+            {
+                <form asp-action="AnalyzeEvidence" method="post" class="inline-action"><input type="hidden" name="caseId" value="@Model.Id" /><input type="hidden" name="evidenceId" value="@evidence.Id" /><button class="btn btn-sm btn-primary">Análisis estático seguro</button></form>
+            }
+            <details><summary>Cadena de custodia (@evidence.ChainOfCustody.Count)</summary>
+                @foreach (var movement in evidence.ChainOfCustody) { <p><strong>@movement.Action</strong> · @movement.PerformedBy · @movement.OccurredAtUtc.ToString("u")<br /><small>@movement.Location — @movement.Notes</small></p> }
+                @if (canCustody)
+                {
+                    <form asp-action="AddCustody" method="post" class="form-grid compact"><input type="hidden" name="CaseId" value="@Model.Id" /><input type="hidden" name="EvidenceId" value="@evidence.Id" /><input name="Action" class="form-control" placeholder="Acción" required /><input name="Location" class="form-control" placeholder="Ubicación" required /><input name="Notes" class="form-control span-2" placeholder="Notas" /><button class="btn btn-sm btn-outline-light span-2">Registrar movimiento</button></form>
+                }
+            </details>
+        </article>
+    }
+    @if (Model.Status == CaseStatus.Acquiring && canExamine)
+    {
+        <form asp-action="StartAnalysis" method="post"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-primary">Cerrar adquisición e iniciar análisis</button></form>
+    }
+</section>
+
+<section class="panel stage-panel @(step == 3 ? "current" : string.Empty)">
+    <div class="panel-heading"><div><span class="eyebrow">Etapa 3</span><h2>Análisis y correlación</h2></div><span class="check">@Model.Findings.Count hallazgo(s)</span></div>
+    @if (Model.Status == CaseStatus.Analyzing && canExamine)
+    {
+        <form asp-action="AddFinding" method="post" class="form-grid compact"><input type="hidden" name="CaseId" value="@Model.Id" /><label class="field">Título<input name="Title" class="form-control" required /></label><label class="field">Severidad<select name="Severity" class="form-select" asp-items="Html.GetEnumSelectList<FindingSeverity>()"></select></label><label class="field span-2">Descripción<textarea name="Description" class="form-control" required></textarea></label><label class="field span-2">Detalles técnicos<textarea name="TechnicalDetails" class="form-control" required></textarea></label><label class="field span-2">Referencias de evidencia<input name="EvidenceReferences" class="form-control" required /></label><button class="btn btn-primary span-2">Registrar hallazgo</button></form>
+    }
+    @foreach (var finding in Model.Findings) { <article class="finding"><span class="severity severity-@finding.Severity.ToString().ToLowerInvariant()">@finding.Severity</span><div><h3>@finding.Title</h3><p>@finding.Description</p><small>Evidencia: @finding.EvidenceReferences · @finding.Analyst</small></div></article> }
+</section>
+
+@if (Model.AnalysisRuns.Count > 0)
+{
+    <section class="panel intelligence-panel">
+        <div class="panel-heading"><div><span class="eyebrow">Producto analítico</span><h2>Inteligencia extraída</h2></div><span class="check">@Model.AnalysisRuns.Count ejecuciones</span></div>
+        <div class="analysis-metrics"><article><strong>@Model.AnalysisRuns.Count(x => x.Success)</strong><span>análisis correctos</span></article><article><strong>@Model.Artifacts.Count</strong><span>artefactos</span></article><article><strong>@Model.Indicators.Count</strong><span>indicadores únicos</span></article><article><strong>@Model.Entities.Count / @Model.Relationships.Count</strong><span>entidades / relaciones</span></article></div>
+        <div class="analysis-columns">
+            <div><h3>Ejecuciones reproducibles</h3>@foreach (var run in Model.AnalysisRuns.OrderByDescending(x => x.CompletedAtUtc)) { var runEvidence = Model.Evidence.FirstOrDefault(x => x.Id == run.EvidenceId); <article class="analysis-run @(run.Success ? "success" : "failed")"><div><strong>@run.AnalyzerId <small>v@run.AnalyzerVersion</small></strong><span>@(runEvidence?.Identifier ?? "Evidencia desconocida") · @run.CompletedAtUtc.ToString("u")</span></div><p>@(run.Success ? run.Summary : run.Error)</p><code>@run.InputSha256</code></article> }</div>
+            <div><h3>Indicadores observados</h3>@if (Model.Indicators.Count == 0) { <p class="muted">No se extrajeron indicadores de compromiso.</p> } @foreach (var indicator in Model.Indicators.OrderBy(x => x.Type).ThenBy(x => x.Value).Take(100)) { <div class="indicator-row"><span class="indicator-type">@indicator.Type</span><code>@indicator.Value</code><small>@indicator.Confidence</small></div> } @if (Model.Indicators.Count > 100) { <p class="muted">Vista acotada a 100 de @Model.Indicators.Count indicadores.</p> }</div>
+        </div>
+        @if (Model.Relationships.Count > 0)
+        {
+            <details class="artifact-browser"><summary>Explorar grafo de relaciones (@Model.Relationships.Count)</summary><div class="table-responsive"><table class="table atlas-table"><thead><tr><th>Origen</th><th>Relación</th><th>Destino</th><th>Descripción</th></tr></thead><tbody>@foreach (var relation in Model.Relationships.Take(500)) { var sourceEntity = Model.Entities.FirstOrDefault(x => x.Id == relation.SourceEntityId); var targetEntity = Model.Entities.FirstOrDefault(x => x.Id == relation.TargetEntityId); <tr><td><code>@(sourceEntity?.DisplayName ?? relation.SourceEntityId.ToString("D"))</code></td><td><span class="indicator-type">@relation.RelationshipType</span></td><td><code>@(targetEntity?.DisplayName ?? relation.TargetEntityId.ToString("D"))</code></td><td><small>@relation.Description · @relation.Confidence</small></td></tr> }</tbody></table></div></details>
+        }
+        <details class="artifact-browser"><summary>Explorar artefactos (@Model.Artifacts.Count)</summary><div class="table-responsive"><table class="table atlas-table"><thead><tr><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Contexto</th></tr></thead><tbody>@foreach (var artifact in Model.Artifacts.OrderBy(x => x.Kind).ThenBy(x => x.Name).Take(500)) { <tr><td><span class="indicator-type">@artifact.Kind</span></td><td>@artifact.Name</td><td><code>@(artifact.Value.Length > 240 ? artifact.Value[..240] + "…" : artifact.Value)</code></td><td><small>@(artifact.Context.Length > 300 ? artifact.Context[..300] + "…" : artifact.Context)</small></td></tr> }</tbody></table></div>@if (Model.Artifacts.Count > 500) { <p class="muted">Vista acotada a 500 artefactos; el expediente conserva @Model.Artifacts.Count.</p> }</details>
+        @if (Model.Events.Count > 0) { <div class="forensic-timeline"><h3>Línea temporal extraída</h3>@foreach (var entry in Model.Events.OrderBy(x => x.OccurredAtUtc).Take(200)) { <div><time>@entry.OccurredAtUtc.ToString("u")</time><span><strong>@entry.Title</strong><small>@entry.Category · @entry.Source · @entry.Confidence</small></span><p>@entry.Description</p></div> }</div> }
+    </section>
+}
+
+<section class="panel stage-panel @(step == 4 ? "current" : string.Empty)">
+    <div class="panel-heading"><div><span class="eyebrow">Etapa 4</span><h2>Informe, revisión y cierre</h2></div><span class="check">@(Model.Report is null ? "Pendiente" : "Sellado")</span></div>
+    @if (Model.Status == CaseStatus.Analyzing && Model.Findings.Count > 0 && canExamine)
+    {
+        <form asp-action="PrepareReport" method="post" class="form-grid compact"><input type="hidden" name="CaseId" value="@Model.Id" /><label class="field span-2">Resumen ejecutivo<textarea name="ExecutiveSummary" class="form-control" required></textarea></label><label class="field span-2">Metodología<textarea name="Methodology" class="form-control" required></textarea></label><label class="field span-2">Conclusiones<textarea name="Conclusions" class="form-control" required></textarea></label><label class="field span-2">Recomendaciones<textarea name="Recommendations" class="form-control" required></textarea></label><button class="btn btn-primary span-2">Generar y sellar informe</button></form>
+    }
+    @if (Model.Report is not null)
+    {
+        <div class="report-ready"><div><h3>Informe v@Model.Report.Version íntegro disponible</h3><code class="hash">@Model.Report.IntegrityHash</code></div><a asp-action="Report" asp-route-id="@Model.Id" class="btn btn-outline-light">Vista imprimible</a><a asp-action="ExportMarkdown" asp-route-id="@Model.Id" class="btn btn-outline-light">Exportar Markdown</a>@if (User.IsInRole(nameof(ForensicRole.Administrator)) || User.IsInRole(nameof(ForensicRole.Examiner)) || User.IsInRole(nameof(ForensicRole.Reviewer))) { <a asp-action="ExportStix" asp-route-id="@Model.Id" class="btn btn-outline-light">Exportar STIX 2.1</a> }@if (Model.ReportReview?.Approved == true) { <a asp-action="ExportPackage" asp-route-id="@Model.Id" class="btn btn-primary">Paquete firmado</a> }</div>
+        @if (Model.Status == CaseStatus.Reporting && Model.ReportReview?.Approved != true && canReview)
+        {
+            <form asp-action="ReviewReport" method="post" class="form-grid compact"><input type="hidden" name="id" value="@Model.Id" /><label class="field span-2">Observaciones<input name="notes" class="form-control" /></label><button name="approve" value="true" class="btn btn-primary">Aprobar informe</button><button name="approve" value="false" class="btn btn-danger">Devolver al análisis</button></form>
+        }
+        @if (Model.ReportReview?.Approved == true && Model.Status == CaseStatus.Reporting && canReview)
+        {
+            <form asp-action="Close" method="post"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-danger">Cerrar y sellar expediente</button></form>
+        }
+    }
+</section>
+
+@if (Model.Status == CaseStatus.Closed && User.IsInRole(nameof(ForensicRole.Administrator)))
+{
+    <section class="panel"><h2>Reapertura controlada</h2><form asp-action="Reopen" method="post" class="form-grid compact"><input type="hidden" name="id" value="@Model.Id" /><label class="field span-2">Justificación<textarea name="reason" class="form-control" required maxlength="1000"></textarea></label><button class="btn btn-danger span-2">Reabrir conservando el cierre</button></form></section>
+}
+
+<section class="panel"><div class="panel-heading"><div><span class="eyebrow">Registro encadenado</span><h2>Auditoría</h2></div><span class="check">@Model.AuditTrail.Count eventos</span></div><div class="timeline">@foreach (var audit in Model.AuditTrail.OrderByDescending(x => x.Sequence)) { <div><b>@audit.Sequence</b><p><strong>@audit.Action</strong> · @audit.Actor<br /><span>@audit.Detail</span><br /><code>@audit.EntryHash[..16]…</code></p><time>@audit.OccurredAtUtc.ToString("u")</time></div> }</div></section>

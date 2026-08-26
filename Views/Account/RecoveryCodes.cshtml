@@ -1,0 +1,4 @@
+@model IReadOnlyList<string>
+@{ ViewData["Title"] = "Códigos de recuperación"; }
+<div class="page-heading"><div><span class="eyebrow">MFA activado</span><h1>Códigos de recuperación</h1><p>Guarda estos códigos una sola vez en un lugar protegido. Cada código sólo funciona una vez.</p></div></div>
+<section class="panel"><div class="recovery-codes">@foreach (var code in Model) { <code>@code</code> }</div><a asp-controller="Cases" asp-action="Index" class="btn btn-primary">Continuar</a></section>

@@ -1,0 +1,10 @@
+@model ForensicCase
+@{ ViewData["Title"] = $"Informe {Model.Folio}"; }
+<article class="forensic-report">
+<header><span class="eyebrow">Informe técnico forense</span><h1>@Model.Title</h1><p>@Model.Folio · @Model.RequestingOrganization</p></header>
+<section><h2>Resumen ejecutivo</h2><p>@Model.Report!.ExecutiveSummary</p></section><section><h2>Alcance</h2><p>@Model.Scope</p></section><section><h2>Metodología</h2><p>@Model.Report.Methodology</p></section>
+<section><h2>Inventario de evidencia</h2>@foreach(var e in Model.Evidence){<div class="report-item"><strong>@e.Identifier — @e.Description</strong><code>SHA-256 @e.Sha256</code></div>}</section>
+<section><h2>Hallazgos</h2>@foreach(var f in Model.Findings){<div class="report-item"><strong>@f.Severity · @f.Title</strong><p>@f.Description</p><small>Referencia: @f.EvidenceReferences</small></div>}</section>
+<section><h2>Conclusiones</h2><p>@Model.Report.Conclusions</p></section><section><h2>Recomendaciones</h2><p>@Model.Report.Recommendations</p></section>
+<footer><p>Preparado por <strong>@Model.Report.PreparedBy</strong> · @Model.Report.PreparedAtUtc.ToString("u")</p><code>SHA-256 del informe: @Model.Report.IntegrityHash</code></footer>
+</article><div class="print-actions"><button class="btn btn-primary" onclick="window.print()">Imprimir / guardar PDF</button><a class="btn btn-outline-light" asp-action="Details" asp-route-id="@Model.Id">Volver</a></div>

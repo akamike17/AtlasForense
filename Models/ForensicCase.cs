@@ -1,0 +1,166 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace AtlasForense.Models;
+
+public enum CaseStatus { Draft, Authorized, Acquiring, Analyzing, Reporting, Closed }
+public enum EvidenceStatus { Registered, Acquired, Verified, Sealed }
+public enum FindingSeverity { Informational, Low, Medium, High, Critical }
+
+public sealed class ForensicCase
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Folio { get; set; } = string.Empty;
+    [Required, StringLength(160)] public string Title { get; set; } = string.Empty;
+    [Required, StringLength(120)] public string RequestingOrganization { get; set; } = string.Empty;
+    [Required, StringLength(120)] public string LeadExaminer { get; set; } = string.Empty;
+    [Required, StringLength(1000)] public string Scope { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public CaseStatus Status { get; set; } = CaseStatus.Draft;
+    public AuthorizationRecord? Authorization { get; set; }
+    public List<EvidenceItem> Evidence { get; set; } = [];
+    public List<AnalysisRun> AnalysisRuns { get; set; } = [];
+    public List<AnalysisArtifact> Artifacts { get; set; } = [];
+    public List<TimelineEvent> Events { get; set; } = [];
+    public List<CaseEntity> Entities { get; set; } = [];
+    public List<CaseRelationship> Relationships { get; set; } = [];
+    public List<CaseIndicator> Indicators { get; set; } = [];
+    public List<CaseNote> Notes { get; set; } = [];
+    public List<Finding> Findings { get; set; } = [];
+    public FinalReport? Report { get; set; }
+    public List<FinalReport> ReportVersions { get; set; } = [];
+    public ReportReview? ReportReview { get; set; }
+    public List<CaseClosure> Closures { get; set; } = [];
+    public List<AuditEntry> AuditTrail { get; set; } = [];
+    public List<CaseAssignment> Assignments { get; set; } = [];
+}
+
+public sealed class CaseAssignment
+{
+    public Guid UserId { get; set; }
+    public ForensicRole Role { get; set; }
+    public Guid AssignedByUserId { get; set; }
+    public string AssignedBy { get; set; } = string.Empty;
+    public DateTimeOffset AssignedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public bool Active { get; set; } = true;
+}
+
+public sealed class AuthorizationRecord
+{
+    public string Authority { get; set; } = string.Empty;
+    public string Reference { get; set; } = string.Empty;
+    public string ApprovedBy { get; set; } = string.Empty;
+    public DateTimeOffset ApprovedAtUtc { get; set; }
+    public string Limitations { get; set; } = string.Empty;
+}
+
+public sealed class EvidenceItem
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Identifier { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string SourceType { get; set; } = string.Empty;
+    public string SourceLocation { get; set; } = string.Empty;
+    public string OriginalFileName { get; set; } = string.Empty;
+    public string StoredFileName { get; set; } = string.Empty;
+    public long SizeBytes { get; set; }
+    public string Sha256 { get; set; } = string.Empty;
+    public DateTimeOffset AcquiredAtUtc { get; set; }
+    public string AcquiredBy { get; set; } = string.Empty;
+    public string AcquisitionMethod { get; set; } = string.Empty;
+    public EvidenceStatus Status { get; set; }
+    public EvidenceClassification Classification { get; set; } = EvidenceClassification.Original;
+    public string DetectedFileType { get; set; } = "Unknown";
+    public string DetectedMimeType { get; set; } = "application/octet-stream";
+    public Guid? DuplicateOfEvidenceId { get; set; }
+    public int? ArchiveEntryCount { get; set; }
+    public long? ArchiveExpandedBytes { get; set; }
+    public AcquisitionWorksheet AcquisitionWorksheet { get; set; } = new();
+    public List<CustodyEvent> ChainOfCustody { get; set; } = [];
+}
+
+public sealed class CustodyEvent
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public DateTimeOffset OccurredAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public string Action { get; set; } = string.Empty;
+    public string PerformedBy { get; set; } = string.Empty;
+    public string Location { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
+}
+
+public sealed class Finding
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Title { get; set; } = string.Empty;
+    public FindingSeverity Severity { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string TechnicalDetails { get; set; } = string.Empty;
+    public string EvidenceReferences { get; set; } = string.Empty;
+    public DateTimeOffset? EventTimeUtc { get; set; }
+    public string Analyst { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+}
+
+public sealed class FinalReport
+{
+    public int Version { get; set; } = 1;
+    public string ExecutiveSummary { get; set; } = string.Empty;
+    public string Methodology { get; set; } = string.Empty;
+    public string Conclusions { get; set; } = string.Empty;
+    public string Recommendations { get; set; } = string.Empty;
+    public string PreparedBy { get; set; } = string.Empty;
+    public DateTimeOffset PreparedAtUtc { get; set; }
+    public string IntegrityHash { get; set; } = string.Empty;
+}
+
+public sealed class AcquisitionWorksheet
+{
+    public string Source { get; set; } = string.Empty;
+    public string DeviceIdentifier { get; set; } = string.Empty;
+    public string ToolName { get; set; } = string.Empty;
+    public string ToolVersion { get; set; } = string.Empty;
+    public string Operator { get; set; } = string.Empty;
+    public DateTimeOffset StartedAtUtc { get; set; }
+    public DateTimeOffset CompletedAtUtc { get; set; }
+    public string Method { get; set; } = string.Empty;
+    public string Limitations { get; set; } = string.Empty;
+    public string Verification { get; set; } = string.Empty;
+}
+
+public sealed class CaseClosure
+{
+    public int Sequence { get; set; }
+    public DateTimeOffset ClosedAtUtc { get; set; }
+    public string ClosedBy { get; set; } = string.Empty;
+    public string ApprovedReportHash { get; set; } = string.Empty;
+    public string EvidenceInventoryHash { get; set; } = string.Empty;
+    public DateTimeOffset? ReopenedAtUtc { get; set; }
+    public string ReopenedBy { get; set; } = string.Empty;
+    public string ReopenReason { get; set; } = string.Empty;
+}
+
+public sealed class ReportReview
+{
+    public string ReviewedBy { get; set; } = string.Empty;
+    public DateTimeOffset ReviewedAtUtc { get; set; }
+    public bool Approved { get; set; }
+    public string Notes { get; set; } = string.Empty;
+    public string ReviewedReportHash { get; set; } = string.Empty;
+}
+
+public sealed class AuditEntry
+{
+    public long Sequence { get; set; }
+    public DateTimeOffset OccurredAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public string Actor { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string Detail { get; set; } = string.Empty;
+    public string PreviousHash { get; set; } = string.Empty;
+    public string EntryHash { get; set; } = string.Empty;
+}
+
+public sealed record OperationResult(bool Success, string Message)
+{
+    public static OperationResult Ok(string message) => new(true, message);
+    public static OperationResult Fail(string message) => new(false, message);
+}

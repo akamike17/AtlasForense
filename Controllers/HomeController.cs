@@ -13,9 +13,9 @@ namespace AtlasForense.Controllers
             _logger = logger;
         }
 
-        public IActionResult Index()
-        {
-            return View();
+    public IActionResult Index()
+    {
+        return RedirectToAction("Index", "Cases");
         }
 
         public IActionResult Privacy()

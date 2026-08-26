@@ -1,0 +1,48 @@
+name: DAST (OWASP ZAP)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+  schedule:
+    - cron: "30 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  zap-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Publish application
+        run: dotnet publish AtlasForense.csproj -c Release -o publish
+      - name: Start application
+        run: |
+          ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:8080 dotnet publish/AtlasForense.dll > app.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8080/healthz > /dev/null; then echo "Aplicación lista."; break; fi
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8080/healthz > /dev/null
+      - name: Run OWASP ZAP baseline scan
+        run: |
+          docker run --rm --network host -v "$PWD/.github/zap:/zap/wrk:ro" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://127.0.0.1:8080 -c rules.tsv -J zap-report.json -r zap-report.html -d || code=$?
+          code=${code:-0}
+          if [ "$code" -gt 1 ]; then echo "ZAP reportó errores de escaneo."; exit "$code"; fi
+          if [ "$code" -eq 1 ]; then echo "ZAP reportó advertencias; revisar zap-report.html."; fi
+      - name: Upload ZAP evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-dast-evidence
+          path: |
+            .github/zap/zap-report.json
+            .github/zap/zap-report.html
+            app.log
+          if-no-files-found: error
+          retention-days: 90

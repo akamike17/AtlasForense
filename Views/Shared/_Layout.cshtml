@@ -1,44 +1,51 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - AtlasForense</title>
+    <title>@ViewData["Title"] · Atlas Forense</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/analysis.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AtlasForense.styles.css" asp-append-version="true" />
 </head>
 <body>
+    <a class="visually-hidden-focusable skip-link" href="#contenido">Saltar al contenido principal</a>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-dark atlas-nav">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">AtlasForense</a>
+                <a class="navbar-brand" asp-controller="Cases" asp-action="Index"><span class="brand-mark">A</span><span>ATLAS <b>FORENSE</b></span></a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item"><a class="nav-link text-dark" asp-controller="Laboratory" asp-action="Index">Laboratorio</a></li>
+                        @if (User.IsInRole(nameof(ForensicRole.Administrator))) { <li class="nav-item"><a class="nav-link" asp-controller="Users" asp-action="Index">Usuarios</a></li> }
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-controller="Cases" asp-action="Index">Expedientes</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Cases" asp-action="Create">Nueva investigación</a></li>
                     </ul>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="navbar-text me-3">@(User.FindFirst("display_name")?.Value ?? User.Identity.Name) · @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post"><button class="btn btn-sm btn-outline-light" type="submit">Cerrar sesión</button></form>
+                    }
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+    <div class="container atlas-container">
+        <main role="main" id="contenido" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="footer atlas-footer">
         <div class="container">
-            &copy; 2026 - AtlasForense - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            Atlas Forense · Integridad, trazabilidad y evidencia verificable
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
