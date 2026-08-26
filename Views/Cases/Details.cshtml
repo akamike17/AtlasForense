@@ -93,6 +93,24 @@
     @foreach (var finding in Model.Findings) { <article class="finding"><span class="severity severity-@finding.Severity.ToString().ToLowerInvariant()">@finding.Severity</span><div><h3>@finding.Title</h3><p>@finding.Description</p><small>Evidencia: @finding.EvidenceReferences · @finding.Analyst</small></div></article> }
 </section>
 
+@if (Model.AnalysisRuns.Count > 0)
+{
+    <section class="panel intelligence-panel">
+        <div class="panel-heading"><div><span class="eyebrow">Producto analítico</span><h2>Inteligencia extraída</h2></div><span class="check">@Model.AnalysisRuns.Count ejecuciones</span></div>
+        <div class="analysis-metrics"><article><strong>@Model.AnalysisRuns.Count(x => x.Success)</strong><span>análisis correctos</span></article><article><strong>@Model.Artifacts.Count</strong><span>artefactos</span></article><article><strong>@Model.Indicators.Count</strong><span>indicadores únicos</span></article><article><strong>@Model.Entities.Count / @Model.Relationships.Count</strong><span>entidades / relaciones</span></article></div>
+        <div class="analysis-columns">
+            <div><h3>Ejecuciones reproducibles</h3>@foreach (var run in Model.AnalysisRuns.OrderByDescending(x => x.CompletedAtUtc)) { var runEvidence = Model.Evidence.FirstOrDefault(x => x.Id == run.EvidenceId); <article class="analysis-run @(run.Success ? "success" : "failed")"><div><strong>@run.AnalyzerId <small>v@run.AnalyzerVersion</small></strong><span>@(runEvidence?.Identifier ?? "Evidencia desconocida") · @run.CompletedAtUtc.ToString("u")</span></div><p>@(run.Success ? run.Summary : run.Error)</p><code>@run.InputSha256</code></article> }</div>
+            <div><h3>Indicadores observados</h3>@if (Model.Indicators.Count == 0) { <p class="muted">No se extrajeron indicadores de compromiso.</p> } @foreach (var indicator in Model.Indicators.OrderBy(x => x.Type).ThenBy(x => x.Value).Take(100)) { <div class="indicator-row"><span class="indicator-type">@indicator.Type</span><code>@indicator.Value</code><small>@indicator.Confidence</small></div> } @if (Model.Indicators.Count > 100) { <p class="muted">Vista acotada a 100 de @Model.Indicators.Count indicadores.</p> }</div>
+        </div>
+        @if (Model.Relationships.Count > 0)
+        {
+            <details class="artifact-browser"><summary>Explorar grafo de relaciones (@Model.Relationships.Count)</summary><div class="table-responsive"><table class="table atlas-table"><thead><tr><th>Origen</th><th>Relación</th><th>Destino</th><th>Descripción</th></tr></thead><tbody>@foreach (var relation in Model.Relationships.Take(500)) { var sourceEntity = Model.Entities.FirstOrDefault(x => x.Id == relation.SourceEntityId); var targetEntity = Model.Entities.FirstOrDefault(x => x.Id == relation.TargetEntityId); <tr><td><code>@(sourceEntity?.DisplayName ?? relation.SourceEntityId.ToString("D"))</code></td><td><span class="indicator-type">@relation.RelationshipType</span></td><td><code>@(targetEntity?.DisplayName ?? relation.TargetEntityId.ToString("D"))</code></td><td><small>@relation.Description · @relation.Confidence</small></td></tr> }</tbody></table></div></details>
+        }
+        <details class="artifact-browser"><summary>Explorar artefactos (@Model.Artifacts.Count)</summary><div class="table-responsive"><table class="table atlas-table"><thead><tr><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Contexto</th></tr></thead><tbody>@foreach (var artifact in Model.Artifacts.OrderBy(x => x.Kind).ThenBy(x => x.Name).Take(500)) { <tr><td><span class="indicator-type">@artifact.Kind</span></td><td>@artifact.Name</td><td><code>@(artifact.Value.Length > 240 ? artifact.Value[..240] + "…" : artifact.Value)</code></td><td><small>@(artifact.Context.Length > 300 ? artifact.Context[..300] + "…" : artifact.Context)</small></td></tr> }</tbody></table></div>@if (Model.Artifacts.Count > 500) { <p class="muted">Vista acotada a 500 artefactos; el expediente conserva @Model.Artifacts.Count.</p> }</details>
+        @if (Model.Events.Count > 0) { <div class="forensic-timeline"><h3>Línea temporal extraída</h3>@foreach (var entry in Model.Events.OrderBy(x => x.OccurredAtUtc).Take(200)) { <div><time>@entry.OccurredAtUtc.ToString("u")</time><span><strong>@entry.Title</strong><small>@entry.Category · @entry.Source · @entry.Confidence</small></span><p>@entry.Description</p></div> }</div> }
+    </section>
+}
+
 <section class="panel stage-panel @(step == 4 ? "current" : string.Empty)">
     <div class="panel-heading"><div><span class="eyebrow">Etapa 4</span><h2>Informe, revisión y cierre</h2></div><span class="check">@(Model.Report is null ? "Pendiente" : "Sellado")</span></div>
     @if (Model.Status == CaseStatus.Analyzing && Model.Findings.Count > 0 && canExamine)

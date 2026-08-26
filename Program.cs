@@ -81,6 +81,13 @@ builder.Services.AddSingleton<IForensicPackageBuilder, SignedForensicPackageBuil
 builder.Services.AddSingleton<IContentTransformationService, ContentTransformationService>();
 builder.Services.AddSingleton<IForensicAnalyzer, StaticTextAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, BinaryMetadataAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, SqliteForensicAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, PortableExecutableAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, BrowserHistoryAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, ZipInventoryAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, PcapNetworkAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, AuthenticodeAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, WindowsShortcutAnalyzer>();
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = checked(configuredEvidenceLimit + 1024 * 1024));
 builder.Services.AddOptions<AtlasForense.Models.ForensicStorageOptions>()
     .Bind(builder.Configuration.GetSection(AtlasForense.Models.ForensicStorageOptions.SectionName))

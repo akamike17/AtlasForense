@@ -468,6 +468,44 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Assert.Equal(2, item.Evidence.Select(evidence => evidence.StoredFileName).Distinct().Count());
     }
 
+    [Fact]
+    public async Task RepeatedAnalysis_IsIdempotentForTimelineEvents()
+    {
+        var service = new JsonForensicCaseService(new TestEnvironment(Path.Combine(_root, "event-deduplication")), [new EventAnalyzer()]);
+        var item = await service.CreateAsync(new CreateCaseInput { Title = "Timeline", RequestingOrganization = "Lab", LeadExaminer = "Examiner", Scope = "Repeatability" }, default);
+        await service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = item.Id, Authority = "Lab", Reference = "R-1", ApprovedBy = "Supervisor" }, default);
+        var bytes = Encoding.UTF8.GetBytes("fixture");
+        await service.AcquireAsync(AcquisitionInput(item.Id, new FormFile(new MemoryStream(bytes), 0, bytes.Length, "File", "timeline.bin")), default);
+        await service.StartAnalysisAsync(item.Id, "Examiner", default);
+        var evidence = item.Evidence.Single();
+
+        Assert.True((await service.AnalyzeEvidenceAsync(item.Id, evidence.Id, "Examiner", default)).Success);
+        Assert.True((await service.AnalyzeEvidenceAsync(item.Id, evidence.Id, "Examiner", default)).Success);
+
+        Assert.Equal(2, item.AnalysisRuns.Count);
+        Assert.Single(item.Events);
+    }
+
+    [Fact]
+    public async Task RepeatedAnalysis_RemapsRelationshipsToCanonicalEntities()
+    {
+        var service = new JsonForensicCaseService(new TestEnvironment(Path.Combine(_root, "relationship-deduplication")), [new RelationshipAnalyzer()]);
+        var item = await service.CreateAsync(new CreateCaseInput { Title = "Graph", RequestingOrganization = "Lab", LeadExaminer = "Examiner", Scope = "Repeatability" }, default);
+        await service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = item.Id, Authority = "Lab", Reference = "R-2", ApprovedBy = "Supervisor" }, default);
+        var bytes = Encoding.UTF8.GetBytes("fixture");
+        await service.AcquireAsync(AcquisitionInput(item.Id, new FormFile(new MemoryStream(bytes), 0, bytes.Length, "File", "graph.bin")), default);
+        await service.StartAnalysisAsync(item.Id, "Examiner", default);
+        var evidence = item.Evidence.Single();
+
+        await service.AnalyzeEvidenceAsync(item.Id, evidence.Id, "Examiner", default);
+        await service.AnalyzeEvidenceAsync(item.Id, evidence.Id, "Examiner", default);
+
+        Assert.Equal(2, item.Entities.Count);
+        var relationship = Assert.Single(item.Relationships);
+        Assert.Contains(item.Entities, x => x.Id == relationship.SourceEntityId);
+        Assert.Contains(item.Entities, x => x.Id == relationship.TargetEntityId);
+    }
+
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
     private Task<OperationResult> Authorize(Guid id) => _service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = id, Authority = "Test authority", Reference = "AUTH-001", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
     private Task<OperationResult> Acquire(Guid id, string name, string content) => Acquire(id, name, Encoding.UTF8.GetBytes(content));
@@ -528,6 +566,37 @@ public sealed class ForensicCaseServiceTests : IDisposable
             var read = base.Read(buffer.Span[..Math.Min(buffer.Length, throwAfterBytes - _bytesRead)]);
             _bytesRead += read;
             return ValueTask.FromResult(read);
+        }
+    }
+
+    private sealed class EventAnalyzer : IForensicAnalyzer
+    {
+        public string Id => "repeatable-event";
+        public string Version => "1.0.0";
+        public bool CanAnalyze(EvidenceItem evidence) => true;
+        public Task<AnalyzerOutput> AnalyzeAsync(AnalyzerContext context)
+        {
+            var output = new AnalyzerOutput();
+            output.Events.Add(new TimelineEvent { EvidenceId = context.Evidence.Id, OccurredAtUtc = DateTimeOffset.UnixEpoch, Category = "Test", Title = "Stable", Description = "Same event", Source = "fixture", Confidence = ConfidenceLevel.Observed });
+            output.Summary = "Stable output";
+            return Task.FromResult(output);
+        }
+    }
+
+    private sealed class RelationshipAnalyzer : IForensicAnalyzer
+    {
+        public string Id => "repeatable-relationship";
+        public string Version => "1.0.0";
+        public bool CanAnalyze(EvidenceItem evidence) => true;
+        public Task<AnalyzerOutput> AnalyzeAsync(AnalyzerContext context)
+        {
+            var output = new AnalyzerOutput();
+            var source = new CaseEntity { Type = "IpAddress", Value = "192.0.2.1", DisplayName = "192.0.2.1", EvidenceIds = [context.Evidence.Id] };
+            var target = new CaseEntity { Type = "IpAddress", Value = "198.51.100.1", DisplayName = "198.51.100.1", EvidenceIds = [context.Evidence.Id] };
+            output.Entities.AddRange([source, target]);
+            output.Relationships.Add(new CaseRelationship { SourceEntityId = source.Id, TargetEntityId = target.Id, RelationshipType = "TCP", Description = "stable", EvidenceIds = [context.Evidence.Id] });
+            output.Summary = "Stable graph";
+            return Task.FromResult(output);
         }
     }
 }

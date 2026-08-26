@@ -329,9 +329,14 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                     item.Artifacts.RemoveAll(x => priorRunIds.Contains(x.AnalysisRunId) && x.Name != "Manual");
                     item.Artifacts.AddRange(output.Artifacts);
                     MergeIndicators(item, output.Indicators);
-                    MergeEntities(item, output.Entities);
-                    item.Relationships.AddRange(output.Relationships);
-                    item.Events.AddRange(output.Events);
+                    var entityIds = MergeEntities(item, output.Entities);
+                    foreach (var relationship in output.Relationships)
+                    {
+                        if (entityIds.TryGetValue(relationship.SourceEntityId, out var sourceId)) relationship.SourceEntityId = sourceId;
+                        if (entityIds.TryGetValue(relationship.TargetEntityId, out var targetId)) relationship.TargetEntityId = targetId;
+                    }
+                    MergeRelationships(item, output.Relationships);
+                    MergeEvents(item, output.Events);
                     run.Success = true;
                     run.Summary = output.Summary;
                     run.CompletedAtUtc = DateTimeOffset.UtcNow;
@@ -459,14 +464,20 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         }
     }
 
-    private static void MergeEntities(ForensicCase item, IEnumerable<CaseEntity> entities)
+    private static Dictionary<Guid, Guid> MergeEntities(ForensicCase item, IEnumerable<CaseEntity> entities)
     {
+        var ids = new Dictionary<Guid, Guid>();
         foreach (var entity in entities)
         {
             var existing = item.Entities.FirstOrDefault(x => x.Type == entity.Type && x.Value.Equals(entity.Value, StringComparison.OrdinalIgnoreCase));
-            if (existing is null) item.Entities.Add(entity);
-            else foreach (var evidenceId in entity.EvidenceIds.Where(id => !existing.EvidenceIds.Contains(id))) existing.EvidenceIds.Add(evidenceId);
+            if (existing is null) { item.Entities.Add(entity); ids[entity.Id] = entity.Id; }
+            else
+            {
+                ids[entity.Id] = existing.Id;
+                foreach (var evidenceId in entity.EvidenceIds.Where(id => !existing.EvidenceIds.Contains(id))) existing.EvidenceIds.Add(evidenceId);
+            }
         }
+        return ids;
     }
 
     private void InitializeDatabase()
@@ -524,6 +535,26 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
             """;
         command.ExecuteNonQuery();
         transaction.Commit();
+    }
+
+    private static void MergeRelationships(ForensicCase item, IEnumerable<CaseRelationship> relationships)
+    {
+        foreach (var relationship in relationships)
+        {
+            var existing = item.Relationships.FirstOrDefault(x => x.SourceEntityId == relationship.SourceEntityId &&
+                x.TargetEntityId == relationship.TargetEntityId && x.RelationshipType.Equals(relationship.RelationshipType, StringComparison.OrdinalIgnoreCase));
+            if (existing is null) item.Relationships.Add(relationship);
+            else foreach (var evidenceId in relationship.EvidenceIds.Where(id => !existing.EvidenceIds.Contains(id))) existing.EvidenceIds.Add(evidenceId);
+        }
+    }
+
+    private static void MergeEvents(ForensicCase item, IEnumerable<TimelineEvent> events)
+    {
+        foreach (var entry in events)
+            if (!item.Events.Any(x => x.EvidenceId == entry.EvidenceId && x.OccurredAtUtc == entry.OccurredAtUtc &&
+                x.Category.Equals(entry.Category, StringComparison.OrdinalIgnoreCase) && x.Title.Equals(entry.Title, StringComparison.Ordinal) &&
+                x.Description.Equals(entry.Description, StringComparison.Ordinal) && x.Source.Equals(entry.Source, StringComparison.OrdinalIgnoreCase)))
+                item.Events.Add(entry);
     }
 
     private List<ForensicCase> Load()
