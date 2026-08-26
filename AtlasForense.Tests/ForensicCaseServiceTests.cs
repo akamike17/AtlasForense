@@ -310,6 +310,25 @@ public sealed class ForensicCaseServiceTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task CaseAssignments_ArePerCaseAndRejectExaminerSelfPromotionToReviewer()
+    {
+        var examinerId = Guid.NewGuid();
+        var item = await _service.CreateAsync(new CreateCaseInput
+        {
+            Title = "Assigned case", RequestingOrganization = "Lab", LeadExaminer = "Examiner", Scope = "Assignment test", ActorUserId = examinerId
+        }, default);
+        var reviewerId = Guid.NewGuid();
+
+        var reviewer = await _service.AssignUserAsync(new CaseAssignmentInput { CaseId = item.Id, UserId = reviewerId, Role = ForensicRole.Reviewer }, Guid.NewGuid(), "Administrator", default);
+        var conflict = await _service.AssignUserAsync(new CaseAssignmentInput { CaseId = item.Id, UserId = examinerId, Role = ForensicRole.Reviewer }, Guid.NewGuid(), "Administrator", default);
+
+        Assert.True(reviewer.Success, reviewer.Message);
+        Assert.False(conflict.Success);
+        Assert.Contains(item.Assignments, assignment => assignment.UserId == examinerId && assignment.Role == ForensicRole.Examiner && assignment.Active);
+        Assert.Contains(item.Assignments, assignment => assignment.UserId == reviewerId && assignment.Role == ForensicRole.Reviewer && assignment.Active);
+    }
+
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
     private Task<OperationResult> Authorize(Guid id) => _service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = id, Authority = "Test authority", Reference = "AUTH-001", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
     private Task<OperationResult> Acquire(Guid id, string name, string content) => Acquire(id, name, Encoding.UTF8.GetBytes(content));

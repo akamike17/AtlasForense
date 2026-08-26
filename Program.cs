@@ -1,11 +1,73 @@
 using AtlasForense.Services;
 using AtlasForense.Forensics;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews(options => options.MaxModelValidationErrors = 100);
+var keyPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "Keys");
+Directory.CreateDirectory(keyPath);
+var dataProtection = builder.Services.AddDataProtection()
+    .SetApplicationName("AtlasForense")
+    .PersistKeysToFileSystem(new DirectoryInfo(keyPath));
+if (OperatingSystem.IsWindows() && !builder.Environment.IsEnvironment("Testing")) dataProtection.ProtectKeysWithDpapi();
+builder.Services.AddSingleton<IUserAccountService, SqliteUserAccountService>();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.Cookie.Name = "__Host-AtlasForense";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = false;
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnRedirectToLogin = context =>
+            {
+                if (IsApiRequest(context.Request)) { context.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; }
+                context.Response.Redirect(context.RedirectUri); return Task.CompletedTask;
+            },
+            OnRedirectToAccessDenied = context =>
+            {
+                if (IsApiRequest(context.Request)) { context.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; }
+                context.Response.Redirect(context.RedirectUri); return Task.CompletedTask;
+            },
+            OnValidatePrincipal = context =>
+            {
+                var idValue = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                var stamp = context.Principal?.FindFirstValue("security_stamp");
+                var service = context.HttpContext.RequestServices.GetRequiredService<IUserAccountService>();
+                var user = Guid.TryParse(idValue, out var id) ? service.GetById(id) : null;
+                if (user is null || !user.Enabled || !CryptographicOperations.FixedTimeEquals(
+                    System.Text.Encoding.UTF8.GetBytes(user.SecurityStamp), System.Text.Encoding.UTF8.GetBytes(stamp ?? string.Empty)))
+                {
+                    context.RejectPrincipal();
+                    return context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                }
+                return Task.CompletedTask;
+            }
+        };
+    });
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    options.AddPolicy("AdministerUsers", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator)));
+    options.AddPolicy("Examine", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Examiner)));
+    options.AddPolicy("AuthorizeCase", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Examiner)));
+    options.AddPolicy("Review", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Reviewer)));
+    options.AddPolicy("CloseCase", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Reviewer)));
+    options.AddPolicy("Custody", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Custodian)));
+    options.AddPolicy("Audit", policy => policy.RequireRole(Enum.GetNames<AtlasForense.Models.ForensicRole>()));
+});
 builder.Services.AddSingleton<IForensicCaseService, JsonForensicCaseService>();
 builder.Services.AddSingleton<IForensicDataMaintenance>(provider =>
     (JsonForensicCaseService)provider.GetRequiredService<IForensicCaseService>());
@@ -85,6 +147,21 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
 
+app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true &&
+        Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) &&
+        context.RequestServices.GetRequiredService<IUserAccountService>().GetById(userId)?.MustChangePassword == true &&
+        !context.Request.Path.StartsWithSegments("/Account/ChangePassword", StringComparison.OrdinalIgnoreCase) &&
+        !context.Request.Path.StartsWithSegments("/Account/Logout", StringComparison.OrdinalIgnoreCase))
+    {
+        if (IsApiRequest(context.Request)) context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        else context.Response.Redirect("/Account/ChangePassword");
+        return;
+    }
+    await next();
+});
 app.UseAuthorization();
 
 app.MapControllerRoute(
@@ -93,3 +170,10 @@ app.MapControllerRoute(
 app.MapHealthChecks("/healthz");
 
 app.Run();
+
+static bool IsApiRequest(HttpRequest request) =>
+    request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase) ||
+    request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true) ||
+    string.Equals(request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
+
+public partial class Program;

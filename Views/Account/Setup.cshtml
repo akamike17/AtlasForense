@@ -1,0 +1,18 @@
+@model BootstrapViewModel
+@{ ViewData["Title"] = "Configuración segura inicial"; }
+<div class="page-heading"><div><span class="eyebrow">Única vez</span><h1>Configuración segura inicial</h1><p>Crea la primera cuenta administradora y vincula un autenticador TOTP.</p></div></div>
+<form asp-action="Setup" method="post" class="panel form-panel" autocomplete="off">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <input asp-for="Input.Challenge" type="hidden" />
+    <div class="alert alert-warning"><strong>Secreto TOTP:</strong> <code>@Model.Secret</code><br />Regístralo en el autenticador y confirma el código de seis dígitos. Expira @Model.ExpiresAtUtc.ToString("u").</div>
+    <div class="form-grid">
+        <label class="field">Usuario<input asp-for="Input.UserName" class="form-control" autocomplete="username" /></label>
+        <label class="field">Nombre visible<input asp-for="Input.DisplayName" class="form-control" autocomplete="name" /></label>
+        <label class="field">Contraseña<input asp-for="Input.Password" type="password" class="form-control" autocomplete="new-password" /></label>
+        <label class="field">Confirmar contraseña<input asp-for="Input.ConfirmPassword" type="password" class="form-control" autocomplete="new-password" /></label>
+        <label class="field span-2">Código TOTP<input asp-for="Input.TotpCode" class="form-control" inputmode="numeric" autocomplete="one-time-code" /></label>
+    </div>
+    <p>La contraseña requiere 14 caracteres, mayúscula, minúscula, número y símbolo.</p>
+    <button class="btn btn-primary">Crear administrador</button>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

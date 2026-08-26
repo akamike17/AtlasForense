@@ -16,4 +16,5 @@ public interface IForensicCaseService
     Task<OperationResult> PrepareReportAsync(ReportInput input, CancellationToken cancellationToken);
     Task<OperationResult> ReviewReportAsync(Guid id, string reviewer, bool approve, string notes, CancellationToken cancellationToken);
     Task<OperationResult> CloseAsync(Guid id, string actor, CancellationToken cancellationToken);
+    Task<OperationResult> AssignUserAsync(CaseAssignmentInput input, Guid administratorId, string administrator, CancellationToken cancellationToken);
 }

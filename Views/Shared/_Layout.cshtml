@@ -20,11 +20,17 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item"><a class="nav-link text-dark" asp-controller="Laboratory" asp-action="Index">Laboratorio</a></li>
+                        @if (User.IsInRole(nameof(ForensicRole.Administrator))) { <li class="nav-item"><a class="nav-link" asp-controller="Users" asp-action="Index">Usuarios</a></li> }
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Cases" asp-action="Index">Expedientes</a>
                         </li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Cases" asp-action="Create">Nueva investigación</a></li>
                     </ul>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="navbar-text me-3">@(User.FindFirst("display_name")?.Value ?? User.Identity.Name) · @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post"><button class="btn btn-sm btn-outline-light" type="submit">Cerrar sesión</button></form>
+                    }
                 </div>
             </div>
         </nav>

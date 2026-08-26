@@ -29,6 +29,17 @@ public sealed class ForensicCase
     public FinalReport? Report { get; set; }
     public ReportReview? ReportReview { get; set; }
     public List<AuditEntry> AuditTrail { get; set; } = [];
+    public List<CaseAssignment> Assignments { get; set; } = [];
+}
+
+public sealed class CaseAssignment
+{
+    public Guid UserId { get; set; }
+    public ForensicRole Role { get; set; }
+    public Guid AssignedByUserId { get; set; }
+    public string AssignedBy { get; set; } = string.Empty;
+    public DateTimeOffset AssignedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public bool Active { get; set; } = true;
 }
 
 public sealed class AuthorizationRecord

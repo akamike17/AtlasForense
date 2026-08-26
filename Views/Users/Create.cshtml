@@ -1,0 +1,5 @@
+@model CreateUserInput
+@{ ViewData["Title"] = "Crear usuario"; }
+<div class="page-heading"><div><span class="eyebrow">Administración</span><h1>Crear usuario</h1></div></div>
+<form asp-action="Create" method="post" class="panel form-panel" autocomplete="off"><div asp-validation-summary="All" class="text-danger"></div><div class="form-grid"><label class="field">Usuario<input asp-for="UserName" class="form-control" /></label><label class="field">Nombre visible<input asp-for="DisplayName" class="form-control" /></label><label class="field">Rol<select asp-for="Role" class="form-select" asp-items="Html.GetEnumSelectList<ForensicRole>()"></select></label><label class="field">Contraseña temporal<input asp-for="TemporaryPassword" type="password" class="form-control" autocomplete="new-password" /></label></div><button class="btn btn-primary">Crear usuario</button></form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

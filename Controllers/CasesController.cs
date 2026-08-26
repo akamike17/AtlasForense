@@ -1,19 +1,23 @@
 using AtlasForense.Models;
 using AtlasForense.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace AtlasForense.Controllers;
 
 [AutoValidateAntiforgeryToken]
-public sealed class CasesController(IForensicCaseService service, IForensicReportBuilder reportBuilder) : Controller
+public sealed class CasesController(IForensicCaseService service, IForensicReportBuilder reportBuilder, IUserAccountService accounts) : Controller
 {
-    [HttpGet] public IActionResult Index() => View(service.GetAll());
-    [HttpGet] public IActionResult Create() => View(new CreateCaseInput());
+    [HttpGet] public IActionResult Index() => View(User.IsInRole(nameof(ForensicRole.Administrator)) ? service.GetAll() : service.GetAll().Where(HasAnyCaseAccess).ToList());
+    [HttpGet, Authorize(Policy = "Examine")] public IActionResult Create() => View(new CreateCaseInput());
 
-    [HttpPost]
+    [HttpPost, Authorize(Policy = "Examine")]
     public async Task<IActionResult> Create(CreateCaseInput input, CancellationToken token)
     {
         if (!ModelState.IsValid) return View(input);
+        input.LeadExaminer = Actor;
+        input.ActorUserId = ActorUserId;
         var item = await service.CreateAsync(input, token);
         TempData["Success"] = $"Expediente {item.Folio} creado.";
         return RedirectToAction(nameof(Details), new { id = item.Id });
@@ -23,45 +27,59 @@ public sealed class CasesController(IForensicCaseService service, IForensicRepor
     public IActionResult Details(Guid id)
     {
         var item = service.Get(id);
-        return item is null ? NotFound() : View(item);
+        if (item is null) return NotFound();
+        if (!HasAnyCaseAccess(item)) return Forbid();
+        ViewBag.AssignableUsers = accounts.GetAll().Where(x => x.Enabled && x.Role != ForensicRole.Administrator).ToList();
+        return View(item);
     }
 
-    [HttpPost] public Task<IActionResult> Authorize(AuthorizeCaseInput input, CancellationToken token) => Execute(input.CaseId, () => service.AuthorizeAsync(input, token));
+    [HttpPost, Authorize(Policy = "AuthorizeCase")] public Task<IActionResult> Authorize(AuthorizeCaseInput input, CancellationToken token) { input.ApprovedBy = Actor; return Execute(input.CaseId, () => service.AuthorizeAsync(input, token), ForensicRole.Examiner); }
 
-    [HttpPost, RequestSizeLimit(104_857_600)]
+    [HttpPost, RequestSizeLimit(104_857_600), Authorize(Policy = "Examine")]
     public Task<IActionResult> Acquire(AcquireEvidenceInput input, CancellationToken token)
     {
+        input.AcquiredBy = Actor;
         if (!ModelState.IsValid) return Invalid(input.CaseId);
-        return Execute(input.CaseId, () => service.AcquireAsync(input, token));
+        return Execute(input.CaseId, () => service.AcquireAsync(input, token), ForensicRole.Examiner);
     }
 
-    [HttpPost] public Task<IActionResult> AddCustody(CustodyInput input, CancellationToken token) => Execute(input.CaseId, () => service.AddCustodyAsync(input, token));
-    [HttpPost] public Task<IActionResult> StartAnalysis(Guid id, string actor, CancellationToken token) => Execute(id, () => service.StartAnalysisAsync(id, actor, token));
-    [HttpPost] public Task<IActionResult> AnalyzeEvidence(Guid caseId, Guid evidenceId, string actor, CancellationToken token) => Execute(caseId, () => service.AnalyzeEvidenceAsync(caseId, evidenceId, actor, token));
+    [HttpPost, Authorize(Policy = "Custody")] public Task<IActionResult> AddCustody(CustodyInput input, CancellationToken token) { input.PerformedBy = Actor; return Execute(input.CaseId, () => service.AddCustodyAsync(input, token), ForensicRole.Custodian); }
+    [HttpPost, Authorize(Policy = "Examine")] public Task<IActionResult> StartAnalysis(Guid id, CancellationToken token) => Execute(id, () => service.StartAnalysisAsync(id, Actor, token), ForensicRole.Examiner);
+    [HttpPost, Authorize(Policy = "Examine")] public Task<IActionResult> AnalyzeEvidence(Guid caseId, Guid evidenceId, CancellationToken token) => Execute(caseId, () => service.AnalyzeEvidenceAsync(caseId, evidenceId, Actor, token), ForensicRole.Examiner);
 
-    [HttpPost]
+    [HttpPost, Authorize(Policy = "Examine")]
     public Task<IActionResult> AddFinding(FindingInput input, CancellationToken token)
     {
+        input.Analyst = Actor;
         if (!ModelState.IsValid) return Invalid(input.CaseId);
-        return Execute(input.CaseId, () => service.AddFindingAsync(input, token));
+        return Execute(input.CaseId, () => service.AddFindingAsync(input, token), ForensicRole.Examiner);
     }
 
-    [HttpPost]
+    [HttpPost, Authorize(Policy = "Examine")]
     public Task<IActionResult> PrepareReport(ReportInput input, CancellationToken token)
     {
+        input.PreparedBy = Actor;
         if (!ModelState.IsValid) return Invalid(input.CaseId);
-        return Execute(input.CaseId, () => service.PrepareReportAsync(input, token));
+        return Execute(input.CaseId, () => service.PrepareReportAsync(input, token), ForensicRole.Examiner);
     }
 
-    [HttpPost] public Task<IActionResult> ReviewReport(Guid id, string reviewer, bool approve, string notes, CancellationToken token) => Execute(id, () => service.ReviewReportAsync(id, reviewer, approve, notes, token));
+    [HttpPost, Authorize(Policy = "Review")] public Task<IActionResult> ReviewReport(Guid id, bool approve, string notes, CancellationToken token) => Execute(id, () => service.ReviewReportAsync(id, Actor, approve, notes, token), ForensicRole.Reviewer);
 
-    [HttpPost] public Task<IActionResult> Close(Guid id, string actor, CancellationToken token) => Execute(id, () => service.CloseAsync(id, actor, token));
+    [HttpPost, Authorize(Policy = "CloseCase")] public Task<IActionResult> Close(Guid id, CancellationToken token) => Execute(id, () => service.CloseAsync(id, Actor, token), ForensicRole.Reviewer);
+
+    [HttpPost, Authorize(Policy = "AdministerUsers")]
+    public Task<IActionResult> AssignUser(CaseAssignmentInput input, CancellationToken token)
+    {
+        var user = accounts.GetById(input.UserId);
+        if (user is null || !user.Enabled || user.Role != input.Role) { TempData["Error"] = "El usuario debe existir, estar habilitado y tener el mismo rol global."; return Task.FromResult<IActionResult>(RedirectToAction(nameof(Details), new { id = input.CaseId })); }
+        return Execute(input.CaseId, () => service.AssignUserAsync(input, ActorUserId, Actor, token));
+    }
 
     [HttpGet]
     public IActionResult Report(Guid id)
     {
         var item = service.Get(id);
-        return item?.Report is null ? NotFound() : View(item);
+        return item?.Report is null ? NotFound() : HasAnyCaseAccess(item) ? View(item) : Forbid();
     }
 
     [HttpGet]
@@ -69,13 +87,17 @@ public sealed class CasesController(IForensicCaseService service, IForensicRepor
     {
         var item = service.Get(id);
         if (item?.Report is null) return NotFound();
+        if (!HasAnyCaseAccess(item)) return Forbid();
         var document = reportBuilder.BuildMarkdown(item);
         Response.Headers.Append("X-Content-SHA256", document.Sha256);
         return File(System.Text.Encoding.UTF8.GetBytes(document.Content), "text/markdown; charset=utf-8", document.FileName);
     }
 
-    private async Task<IActionResult> Execute(Guid id, Func<Task<OperationResult>> operation)
+    private async Task<IActionResult> Execute(Guid id, Func<Task<OperationResult>> operation, params ForensicRole[] requiredRoles)
     {
+        var item = service.Get(id);
+        if (item is null) return NotFound();
+        if (requiredRoles.Length > 0 && !User.IsInRole(nameof(ForensicRole.Administrator)) && !item.Assignments.Any(x => x.Active && x.UserId == ActorUserId && requiredRoles.Contains(x.Role))) return Forbid();
         var result = await operation();
         TempData[result.Success ? "Success" : "Error"] = result.Message;
         return RedirectToAction(nameof(Details), new { id });
@@ -86,4 +108,8 @@ public sealed class CasesController(IForensicCaseService service, IForensicRepor
         TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage));
         return Task.FromResult<IActionResult>(RedirectToAction(nameof(Details), new { id }));
     }
+
+    private string Actor => User.FindFirst("display_name")?.Value ?? User.Identity?.Name ?? throw new InvalidOperationException("No existe identidad autenticada.");
+    private Guid ActorUserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private bool HasAnyCaseAccess(ForensicCase item) => User.IsInRole(nameof(ForensicRole.Administrator)) || item.Assignments.Any(x => x.Active && x.UserId == ActorUserId);
 }

@@ -1,0 +1,4 @@
+@model UserProvisioningResult
+@{ ViewData["Title"] = "Credenciales de incorporación"; }
+<div class="page-heading"><div><span class="eyebrow">Entrega única</span><h1>Incorporación de @Model.User!.DisplayName</h1><p>Transfiere contraseña y MFA por canales separados. Esta información no volverá a mostrarse.</p></div></div>
+<section class="panel"><h2>Secreto TOTP</h2><code>@Model.TotpSecret</code><h2>Códigos de recuperación</h2><div class="recovery-codes">@foreach (var code in Model.RecoveryCodes) { <code>@code</code> }</div><a asp-action="Index" class="btn btn-primary">Finalizar</a></section>

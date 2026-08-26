@@ -22,10 +22,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
 
     static JsonForensicCaseService()
     {
-        SQLitePCL.raw.SetProvider(OperatingSystem.IsWindows()
-            ? new SQLitePCL.SQLite3Provider_winsqlite3()
-            : new SQLitePCL.SQLite3Provider_sqlite3());
-        SQLitePCL.raw.FreezeProvider();
+        SqliteRuntime.Initialize();
     }
 
     public JsonForensicCaseService(IWebHostEnvironment environment, IEnumerable<IForensicAnalyzer>? analyzers = null)
@@ -149,6 +146,8 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                 Title = input.Title.Trim(), RequestingOrganization = input.RequestingOrganization.Trim(),
                 LeadExaminer = input.LeadExaminer.Trim(), Scope = input.Scope.Trim()
             };
+            if (input.ActorUserId != Guid.Empty)
+                item.Assignments.Add(new CaseAssignment { UserId = input.ActorUserId, Role = ForensicRole.Examiner, AssignedByUserId = input.ActorUserId, AssignedBy = item.LeadExaminer });
             AppendAudit(item, item.LeadExaminer, "CASE_CREATED", "Expediente creado en borrador.");
             _cases.Add(item);
             await SaveAsync(cancellationToken);
@@ -324,6 +323,23 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         return OperationResult.Ok("Etapa 4 completada. Expediente cerrado y sellado.");
     });
 
+    public Task<OperationResult> AssignUserAsync(CaseAssignmentInput input, Guid administratorId, string administrator, CancellationToken token) => MutateAsync(input.CaseId, token, item =>
+    {
+        if (item.Status == CaseStatus.Closed) return OperationResult.Fail("Un expediente cerrado no admite cambios de asignación.");
+        if (input.Role == ForensicRole.Administrator) return OperationResult.Fail("El rol Administrador no se asigna a un expediente.");
+        var existing = item.Assignments.FirstOrDefault(x => x.UserId == input.UserId && x.Active);
+        if (existing is not null)
+        {
+            if (existing.Role == input.Role) return OperationResult.Ok("La asignación ya existe.");
+            if (existing.Role == ForensicRole.Examiner && input.Role == ForensicRole.Reviewer)
+                return OperationResult.Fail("Quien examina el expediente no puede actuar después como revisor independiente.");
+            existing.Active = false;
+        }
+        item.Assignments.Add(new CaseAssignment { UserId = input.UserId, Role = input.Role, AssignedByUserId = administratorId, AssignedBy = administrator });
+        AppendAudit(item, administrator, "CASE_USER_ASSIGNED", $"Usuario {input.UserId:D}; rol {input.Role}.");
+        return OperationResult.Ok("Usuario asignado al expediente.");
+    });
+
     private async Task<OperationResult> MutateAsync(Guid id, CancellationToken token, Func<ForensicCase, OperationResult> change)
     {
         await _gate.WaitAsync(token);
@@ -404,8 +420,16 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                 PRIMARY KEY (CaseId, Sequence),
                 FOREIGN KEY (CaseId) REFERENCES Cases(Id) ON DELETE RESTRICT
             );
+            CREATE TABLE IF NOT EXISTS CaseAssignments (
+                CaseId TEXT NOT NULL, UserId TEXT NOT NULL, Role INTEGER NOT NULL,
+                AssignedByUserId TEXT NOT NULL, AssignedAtUtc TEXT NOT NULL, Active INTEGER NOT NULL CHECK (Active IN (0,1)),
+                PRIMARY KEY (CaseId, UserId, AssignedAtUtc),
+                FOREIGN KEY (CaseId) REFERENCES Cases(Id) ON DELETE RESTRICT
+            );
             INSERT OR IGNORE INTO SchemaMigrations (Version, AppliedAtUtc)
             VALUES (1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
+            INSERT OR IGNORE INTO SchemaMigrations (Version, AppliedAtUtc)
+            VALUES (4, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
             """;
         command.ExecuteNonQuery();
         transaction.Commit();
@@ -512,7 +536,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
 
     private static async Task ReplaceIntegrityRowsAsync(SqliteConnection connection, SqliteTransaction transaction, ForensicCase item, CancellationToken token)
     {
-        foreach (var table in new[] { "EvidenceItems", "AuditEntries" })
+        foreach (var table in new[] { "EvidenceItems", "AuditEntries", "CaseAssignments" })
         {
             await using var delete = connection.CreateCommand();
             delete.Transaction = transaction;
@@ -542,6 +566,16 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
             insert.Parameters.AddWithValue("$hash", audit.EntryHash);
             insert.Parameters.AddWithValue("$previous", audit.PreviousHash);
             insert.Parameters.AddWithValue("$occurred", audit.OccurredAtUtc.ToUniversalTime().ToString("O"));
+            await insert.ExecuteNonQueryAsync(token);
+        }
+        foreach (var assignment in item.Assignments)
+        {
+            await using var insert = connection.CreateCommand();
+            insert.Transaction = transaction;
+            insert.CommandText = "INSERT INTO CaseAssignments (CaseId, UserId, Role, AssignedByUserId, AssignedAtUtc, Active) VALUES ($caseId,$user,$role,$by,$at,$active);";
+            insert.Parameters.AddWithValue("$caseId", item.Id.ToString("D")); insert.Parameters.AddWithValue("$user", assignment.UserId.ToString("D"));
+            insert.Parameters.AddWithValue("$role", (int)assignment.Role); insert.Parameters.AddWithValue("$by", assignment.AssignedByUserId.ToString("D"));
+            insert.Parameters.AddWithValue("$at", assignment.AssignedAtUtc.ToUniversalTime().ToString("O")); insert.Parameters.AddWithValue("$active", assignment.Active);
             await insert.ExecuteNonQueryAsync(token);
         }
     }
