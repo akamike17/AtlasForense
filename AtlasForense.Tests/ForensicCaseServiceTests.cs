@@ -591,20 +591,22 @@ public sealed class ForensicCaseServiceTests : IDisposable
         "ElfFile\0"u8.CopyTo(data.AsSpan(0));
         System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(24), 2);
         System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(32), 128);
-        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(36), 1);
-        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(40), 3);
-        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(44), 4096);
-        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(48), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(36), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(38), 3);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(40), (uint)data.Length);
         "ElfChnk\0"u8.CopyTo(data.AsSpan(4096));
         System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(4096 + 8), 1);
         System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(4096 + 16), 1);
-        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4096 + 24), 512);
-        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4096 + 28), 512);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(4096 + 24), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(4096 + 32), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4096 + 44), 512);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4096 + 48), 576);
         var record = 4096 + 512;
         System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(record), 0x2a2a);
         System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(record + 4), 64);
         System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(record + 8), 1);
         System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(record + 16), (ulong)new DateTime(2024, 6, 1, 9, 0, 0, DateTimeKind.Utc).ToFileTimeUtc());
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(record + 60), 64);
         return data;
     }
 

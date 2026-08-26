@@ -22,4 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AtlasForense.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Corpus\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

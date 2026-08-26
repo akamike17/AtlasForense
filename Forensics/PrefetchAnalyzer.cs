@@ -21,6 +21,8 @@ public sealed class PrefetchAnalyzer : IForensicAnalyzer
         var data = await ReadBounded(context.FilePath, context.CancellationToken);
         var output = new AnalyzerOutput();
         if (data.Length < 0x80) throw new InvalidDataException("El archivo Prefetch está truncado antes de completar su cabecera.");
+        if (data.Length >= 3 && data[0] == (byte)'M' && data[1] == (byte)'A' && data[2] == (byte)'M')
+            throw new InvalidDataException("El Prefetch está dentro de un contenedor comprimido MAM (Windows 11 24H2+); se requiere descompresión previa fuera de esta fase estática.");
         var version = ReadUInt32(data, 0);
         var magic = ReadUInt32(data, 4);
         if (magic != 0x41434353) throw new InvalidDataException("La evidencia no contiene la firma SCCA de un archivo Prefetch.");
@@ -40,7 +42,7 @@ public sealed class PrefetchAnalyzer : IForensicAnalyzer
         var stringsOffset = ReadUInt32(data, 0x64);
         var stringsSize = ReadUInt32(data, 0x68);
         var referenced = 0;
-        if (stringsOffset >= 0x80 && stringsSize >= 4 && stringsOffset + stringsSize <= data.Length && stringsSize <= MaxInspectionBytes)
+        if (stringsOffset >= 0x80 && stringsSize >= 4 && (long)stringsOffset + stringsSize <= data.Length && stringsSize <= MaxInspectionBytes)
         {
             foreach (var value in ReadUtf16Strings(data, (int)stringsOffset, (int)stringsSize).Take(MaxStrings))
             {

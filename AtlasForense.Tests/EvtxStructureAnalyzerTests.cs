@@ -68,17 +68,18 @@ public sealed class EvtxStructureAnalyzerTests : IDisposable
         "ElfFile\0"u8.CopyTo(data.AsSpan(0));
         BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(24), 3);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(32), 128);
-        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(36), 1);
-        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(40), 3);
-        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(44), 4096);
-        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(48), 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(36), 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(38), 3);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(40), (uint)data.Length);
 
         var chunk = 4096;
         "ElfChnk\0"u8.CopyTo(data.AsSpan(chunk));
         BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(chunk + 8), 1);
         BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(chunk + 16), 2);
-        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(chunk + 24), 512);
-        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(chunk + 28), 640);
+        BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(chunk + 24), 1);
+        BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(chunk + 32), 2);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(chunk + 44), 640);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(chunk + 48), 768);
 
         WriteRecord(data, chunk + 512, 1, DateTime(2024, 3, 1, 10, 0), "Microsoft-Windows-Security-Auditing");
         WriteRecord(data, chunk + 640, 2, DateTime(2024, 3, 2, 11, 0), "EventRecordPayload");
@@ -92,6 +93,7 @@ public sealed class EvtxStructureAnalyzerTests : IDisposable
         BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(offset + 8), number);
         BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(offset + 16), (ulong)fileTime);
         Encoding.Unicode.GetBytes(payload).CopyTo(data.AsSpan(offset + 24));
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset + 124), 128);
     }
 
     private static long DateTime(int year, int month, int day, int hour, int minute) =>
