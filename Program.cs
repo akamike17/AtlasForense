@@ -76,6 +76,7 @@ builder.Services.AddSingleton<IForensicCaseService, JsonForensicCaseService>();
 builder.Services.AddSingleton<IForensicDataMaintenance>(provider =>
     (JsonForensicCaseService)provider.GetRequiredService<IForensicCaseService>());
 builder.Services.AddSingleton<IForensicReportBuilder, MarkdownForensicReportBuilder>();
+builder.Services.AddSingleton<IStixIndicatorExporter, StixIndicatorExporter>();
 builder.Services.AddSingleton<IForensicPackageSigner, CertificateForensicPackageSigner>();
 builder.Services.AddSingleton<IForensicPackageBuilder, SignedForensicPackageBuilder>();
 builder.Services.AddSingleton<IContentTransformationService, ContentTransformationService>();
@@ -94,6 +95,7 @@ builder.Services.AddSingleton<IForensicAnalyzer, OfficeDocumentAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, EvtxStructureAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, PrefetchAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, RegistryHiveAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, WebShellHeuristicsAnalyzer>();
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = checked(configuredEvidenceLimit + 1024 * 1024));
 builder.Services.AddOptions<AtlasForense.Models.ForensicStorageOptions>()
     .Bind(builder.Configuration.GetSection(AtlasForense.Models.ForensicStorageOptions.SectionName))

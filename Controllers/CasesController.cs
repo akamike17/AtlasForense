@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace AtlasForense.Controllers;
 
 [AutoValidateAntiforgeryToken]
-public sealed class CasesController(IForensicCaseService service, IForensicReportBuilder reportBuilder, IForensicPackageBuilder packageBuilder, IUserAccountService accounts) : Controller
+public sealed class CasesController(IForensicCaseService service, IForensicReportBuilder reportBuilder, IForensicPackageBuilder packageBuilder, IStixIndicatorExporter stixExporter, IUserAccountService accounts) : Controller
 {
     [HttpGet] public IActionResult Index() => View(User.IsInRole(nameof(ForensicRole.Administrator)) ? service.GetAll() : service.GetAll().Where(HasAnyCaseAccess).ToList());
     [HttpGet, Authorize(Policy = "Examine")] public IActionResult Create() => View(new CreateCaseInput());
@@ -94,6 +94,18 @@ public sealed class CasesController(IForensicCaseService service, IForensicRepor
         var document = reportBuilder.BuildMarkdown(item);
         Response.Headers.Append("X-Content-SHA256", document.Sha256);
         return File(System.Text.Encoding.UTF8.GetBytes(document.Content), "text/markdown; charset=utf-8", document.FileName);
+    }
+
+    [HttpGet, Authorize(Policy = "ExportCase")]
+    public IActionResult ExportStix(Guid id)
+    {
+        var item = service.Get(id);
+        if (item is null) return NotFound();
+        if (!HasAnyCaseAccess(item)) return Forbid();
+        var result = stixExporter.Export(item);
+        Response.Headers.Append("X-Content-SHA256", result.Sha256);
+        Response.Headers.Append("X-Stix-Indicator-Count", result.Indicators.ToString());
+        return File(System.Text.Encoding.UTF8.GetBytes(result.Content), "application/stix+json; charset=utf-8", result.FileName);
     }
 
     [HttpGet, Authorize(Policy = "ExportCase")]
