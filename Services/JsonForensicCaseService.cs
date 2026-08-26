@@ -728,6 +728,9 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         if (HeaderStartsWith(header, count, "%PDF-"u8)) return ("PDF", "application/pdf");
         if (HeaderStartsWith(header, count, new byte[] { 0x7F, (byte)'E', (byte)'L', (byte)'F' })) return ("ELF", "application/x-elf");
         if (HeaderStartsWith(header, count, "MZ"u8)) return ("PE", "application/vnd.microsoft.portable-executable");
+        if (HeaderStartsWith(header, count, "ElfFile\0"u8)) return ("EVTX", "application/x-evtx");
+        if (HeaderStartsWith(header, count, "regf"u8)) return ("REGF", "application/x-registry-hive");
+        if (count >= 8 && header[4] == (byte)'S' && header[5] == (byte)'C' && header[6] == (byte)'C' && header[7] == (byte)'A' && header[1] == 0 && header[2] == 0 && header[3] == 0 && header[0] is 17 or 23 or 26 or 30) return ("PREFETCH", "application/x-prefetch");
         if (HeaderStartsWith(header, count, new byte[] { 0x1F, 0x8B })) return ("GZIP", "application/gzip");
         if (HeaderStartsWith(header, count, new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 })) return ("OLE", "application/x-cfb");
         if (HeaderStartsWith(header, count, "SQLite format 3\0"u8)) return ("SQLite", "application/vnd.sqlite3");

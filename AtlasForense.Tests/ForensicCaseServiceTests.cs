@@ -549,6 +549,105 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Assert.Contains(item.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED" && x.Detail.Contains("office-document-structure"));
     }
 
+    [Fact]
+    public async Task Pipeline_RunsWindowsForensicAnalyzersOnEvtxPrefetchAndHiveEvidence()
+    {
+        var service = new JsonForensicCaseService(new TestEnvironment(_root), [new EvtxStructureAnalyzer(), new PrefetchAnalyzer(), new RegistryHiveAnalyzer()]);
+        var item = await service.CreateAsync(new CreateCaseInput { Title = "Windows case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
+        await service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = item.Id, Authority = "Test authority", Reference = "AUTH-003", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
+
+        var evtxBytes = BuildMinimalEvtx();
+        var prefetchBytes = BuildMinimalPrefetch();
+        var hiveBytes = BuildMinimalHive();
+        foreach (var (name, bytes) in new[] { ("Security.evtx", evtxBytes), ("NOTEPAD.EXE-00000001.pf", prefetchBytes), ("NTUSER.DAT", hiveBytes) })
+        {
+            var result = await service.AcquireAsync(AcquisitionInput(item.Id, new FormFile(new MemoryStream(bytes), 0, bytes.Length, "File", name)), default);
+            Assert.True(result.Success, result.Message);
+        }
+
+        Assert.Equal("EVTX", item.Evidence.Single(x => x.OriginalFileName == "Security.evtx").DetectedFileType);
+        Assert.Equal("PREFETCH", item.Evidence.Single(x => x.OriginalFileName.EndsWith(".pf")).DetectedFileType);
+        Assert.Equal("REGF", item.Evidence.Single(x => x.OriginalFileName == "NTUSER.DAT").DetectedFileType);
+
+        Assert.True((await service.StartAnalysisAsync(item.Id, "Analyst", default)).Success);
+        foreach (var evidence in item.Evidence)
+        {
+            var result = await service.AnalyzeEvidenceAsync(item.Id, evidence.Id, "Analyst", default);
+            Assert.True(result.Success, result.Message);
+        }
+
+        Assert.Contains(item.Artifacts, x => x.Name == "Cabecera EVTX");
+        Assert.Contains(item.Artifacts, x => x.Name == "Ejecutable Prefetch" && x.Value == "NOTEPAD.EXE");
+        Assert.Contains(item.Artifacts, x => x.Name == "Colmena de registro" && x.Value == "MINIHIVE");
+        Assert.All(item.AnalysisRuns, run => { Assert.True(run.Success); Assert.True(run.NetworkBlocked); Assert.False(run.SampleExecuted); });
+        Assert.Contains(item.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED" && x.Detail.Contains("windows-evtx-structure"));
+        Assert.Contains(item.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED" && x.Detail.Contains("windows-prefetch"));
+        Assert.Contains(item.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED" && x.Detail.Contains("windows-registry-hive"));
+    }
+
+    private static byte[] BuildMinimalEvtx()
+    {
+        var data = new byte[4096 + 65536];
+        "ElfFile\0"u8.CopyTo(data.AsSpan(0));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(24), 2);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(32), 128);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(36), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(40), 3);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(44), 4096);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(48), 1);
+        "ElfChnk\0"u8.CopyTo(data.AsSpan(4096));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(4096 + 8), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(4096 + 16), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4096 + 24), 512);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4096 + 28), 512);
+        var record = 4096 + 512;
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(record), 0x2a2a);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(record + 4), 64);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(record + 8), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(record + 16), (ulong)new DateTime(2024, 6, 1, 9, 0, 0, DateTimeKind.Utc).ToFileTimeUtc());
+        return data;
+    }
+
+    private static byte[] BuildMinimalPrefetch()
+    {
+        var data = new byte[0x200];
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0), 26);
+        "SCCA"u8.CopyTo(data.AsSpan(4));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(8), (uint)data.Length);
+        Encoding.Unicode.GetBytes("NOTEPAD.EXE").CopyTo(data.AsSpan(12));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0x48), 0x00000001);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0x64), 0x100);
+        var strings = Encoding.Unicode.GetBytes("\\DEVICE\\HARDDISKVOLUME2\\WINDOWS\\NOTEPAD.EXE\0");
+        strings.CopyTo(data.AsSpan(0x100));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0x68), (uint)strings.Length);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0x7c), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(0x80), (ulong)new DateTime(2024, 6, 2, 10, 0, 0, DateTimeKind.Utc).ToFileTimeUtc());
+        return data;
+    }
+
+    private static byte[] BuildMinimalHive()
+    {
+        var data = new byte[8192];
+        "regf"u8.CopyTo(data.AsSpan(0));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), 3);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(8), 3);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(20), 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(24), 5);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(36), 0x20);
+        Encoding.Unicode.GetBytes("MINIHIVE").CopyTo(data.AsSpan(48));
+        "hbin"u8.CopyTo(data.AsSpan(4096));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4096 + 8), 4096);
+        var root = 4096 + 0x20;
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(root), -0x60);
+        "nk"u8.CopyTo(data.AsSpan(root + 4));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(root + 6), 0x0004);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(root + 4 + 0x1c), 0xffffffff);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(root + 4 + 0x28), 0xffffffff);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(root + 4 + 0x48), 16);
+        Encoding.Unicode.GetBytes("MINIROOT").CopyTo(data.AsSpan(root + 4 + 0x4c));
+        return data;
+    }
+
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
     private Task<OperationResult> Authorize(Guid id) => _service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = id, Authority = "Test authority", Reference = "AUTH-001", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
     private Task<OperationResult> Acquire(Guid id, string name, string content) => Acquire(id, name, Encoding.UTF8.GetBytes(content));

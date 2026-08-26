@@ -91,6 +91,9 @@ builder.Services.AddSingleton<IForensicAnalyzer, WindowsShortcutAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, ElfStructureAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, PdfStructureAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, OfficeDocumentAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, EvtxStructureAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, PrefetchAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, RegistryHiveAnalyzer>();
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = checked(configuredEvidenceLimit + 1024 * 1024));
 builder.Services.AddOptions<AtlasForense.Models.ForensicStorageOptions>()
     .Bind(builder.Configuration.GetSection(AtlasForense.Models.ForensicStorageOptions.SectionName))
