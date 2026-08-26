@@ -10,11 +10,16 @@ public sealed class AnalysisRun
     public Guid EvidenceId { get; set; }
     public string AnalyzerId { get; set; } = string.Empty;
     public string AnalyzerVersion { get; set; } = string.Empty;
+    public string Configuration { get; set; } = "read-only; bounded input; network disabled";
+    public string InputSha256 { get; set; } = string.Empty;
     public DateTimeOffset StartedAtUtc { get; set; }
     public DateTimeOffset CompletedAtUtc { get; set; }
     public bool NetworkBlocked { get; set; } = true;
     public bool SampleExecuted { get; set; }
     public bool Success { get; set; }
+    public bool Cancelled { get; set; }
+    public string Warning { get; set; } = string.Empty;
+    public string ReproducibilityMetadata { get; set; } = string.Empty;
     public string Summary { get; set; } = string.Empty;
     public string Error { get; set; } = string.Empty;
 }

@@ -20,7 +20,7 @@ public sealed class ForensicCaseServiceTests : IDisposable
     public ForensicCaseServiceTests()
     {
         Directory.CreateDirectory(_root);
-        _service = new JsonForensicCaseService(new TestEnvironment(_root), [new StaticTextAnalyzer()]);
+        _service = new JsonForensicCaseService(new TestEnvironment(_root), [new StaticTextAnalyzer(), new BinaryMetadataAnalyzer()]);
     }
 
     [Fact]
@@ -189,9 +189,8 @@ public sealed class ForensicCaseServiceTests : IDisposable
 
         Assert.True(result.Success, result.Message);
         var analyzed = _service.Get(item.Id)!;
-        var run = Assert.Single(analyzed.AnalysisRuns);
-        Assert.True(run.NetworkBlocked);
-        Assert.False(run.SampleExecuted);
+        Assert.Equal(2, analyzed.AnalysisRuns.Count);
+        Assert.All(analyzed.AnalysisRuns, run => { Assert.True(run.NetworkBlocked); Assert.False(run.SampleExecuted); Assert.Equal(evidence.Sha256, run.InputSha256); });
         Assert.Contains(analyzed.Indicators, x => x.Type == IndicatorType.Url && x.Value.Contains("c2.example.test"));
         Assert.Contains(analyzed.Indicators, x => x.Type == IndicatorType.Domain && x.Value == "c2.example.test");
         Assert.Contains(analyzed.Artifacts, x => x.Kind == ArtifactKind.ScriptFunction && x.Value == "sendData");
