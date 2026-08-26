@@ -80,11 +80,13 @@ builder.Services.AddSingleton<IForensicCaseService, JsonForensicCaseService>();
 builder.Services.AddSingleton<IForensicDataMaintenance>(provider =>
     (JsonForensicCaseService)provider.GetRequiredService<IForensicCaseService>());
 builder.Services.AddSingleton<IForensicReportBuilder, MarkdownForensicReportBuilder>();
+builder.Services.AddSingleton<IReleaseManifestBuilder, ReleaseManifestBuilder>();
 builder.Services.AddSingleton<IStixIndicatorExporter, StixIndicatorExporter>();
 builder.Services.AddSingleton<IForensicPackageSigner, CertificateForensicPackageSigner>();
 builder.Services.AddSingleton<IForensicPackageBuilder, SignedForensicPackageBuilder>();
 builder.Services.AddSingleton<IContentTransformationService, ContentTransformationService>();
 builder.Services.AddSingleton<IIsolatedProcessSandbox, IsolatedProcessSandbox>();
+builder.Services.AddSingleton<IForensicRetention, ForensicRetentionService>();
 builder.Services.AddSingleton<IForensicAnalyzer, StaticTextAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, BinaryMetadataAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, SqliteForensicAnalyzer>();

@@ -11,6 +11,7 @@ public sealed class ForensicStorageOptions
     [Range(1_048_576, 100L * 1024 * 1024 * 1024)] public long MaxArchiveExpandedBytes { get; set; } = 1024L * 1024 * 1024;
     [Range(2, 10_000)] public double MaxCompressionRatio { get; set; } = 100;
     [Range(0, 20)] public int MaxArchiveDepth { get; set; } = 3;
+    [Range(0, 36_500)] public int RetentionDays { get; set; } = 0;
 }
 
 public enum EvidenceClassification { Original, WorkingCopy, DerivedArtifact, ExportedPackage }
