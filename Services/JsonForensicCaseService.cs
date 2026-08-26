@@ -729,6 +729,7 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
         if (HeaderStartsWith(header, count, new byte[] { 0x7F, (byte)'E', (byte)'L', (byte)'F' })) return ("ELF", "application/x-elf");
         if (HeaderStartsWith(header, count, "MZ"u8)) return ("PE", "application/vnd.microsoft.portable-executable");
         if (HeaderStartsWith(header, count, new byte[] { 0x1F, 0x8B })) return ("GZIP", "application/gzip");
+        if (HeaderStartsWith(header, count, new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 })) return ("OLE", "application/x-cfb");
         if (HeaderStartsWith(header, count, "SQLite format 3\0"u8)) return ("SQLite", "application/vnd.sqlite3");
         return ("Unknown", "application/octet-stream");
     }

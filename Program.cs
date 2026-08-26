@@ -88,6 +88,9 @@ builder.Services.AddSingleton<IForensicAnalyzer, ZipInventoryAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, PcapNetworkAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, AuthenticodeAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, WindowsShortcutAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, ElfStructureAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, PdfStructureAnalyzer>();
+builder.Services.AddSingleton<IForensicAnalyzer, OfficeDocumentAnalyzer>();
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = checked(configuredEvidenceLimit + 1024 * 1024));
 builder.Services.AddOptions<AtlasForense.Models.ForensicStorageOptions>()
     .Bind(builder.Configuration.GetSection(AtlasForense.Models.ForensicStorageOptions.SectionName))
