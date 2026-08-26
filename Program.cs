@@ -197,7 +197,7 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz").AllowAnonymous();
 
 app.Run();
 

@@ -42,13 +42,13 @@ public sealed class StixIndicatorExporterTests
         Assert.Contains(indicators, x => x!["pattern"]!.GetValue<string>() == "[mutex:name = 'Global\\Lock']");
         Assert.All(indicators, x => Assert.Equal("indicator", x!["type"]!.GetValue<string>()));
         Assert.All(indicators, x => Assert.StartsWith("indicator--", x!["id"]!.GetValue<string>()));
-        var malicious = indicators.Single(x => x!["name"]!.GetValue<string>().Contains("malicious.example/gate"));
+        var malicious = indicators.Single(x => x!["name"]!.GetValue<string>().Contains("malicious.example/gate"))!;
         Assert.Equal("malicious-activity", malicious["indicator_types"]!.AsArray()[0]!.GetValue<string>());
         Assert.DoesNotContain(indicators.Where(x => !ReferenceEquals(x, malicious)), x => x!["indicator_types"] is not null);
         Assert.Equal(20, malicious["confidence"]!.GetValue<int>());
-        Assert.Equal(70, indicators.Single(x => x!["pattern"]!.GetValue<string>() == "[domain-name:value = 'malicious.example']")["confidence"]!.GetValue<int>());
-        Assert.Equal(85, indicators.Single(x => x!["pattern"]!.GetValue<string>() == "[ipv4-addr:value = '198.51.100.7']")["confidence"]!.GetValue<int>());
-        Assert.Equal(40, indicators.Single(x => x!["pattern"]!.GetValue<string>() == "[email-addr:value = 'cebo@malicious.example']")["confidence"]!.GetValue<int>());
+        Assert.Equal(70, indicators.Single(x => x!["pattern"]!.GetValue<string>() == "[domain-name:value = 'malicious.example']")!["confidence"]!.GetValue<int>());
+        Assert.Equal(85, indicators.Single(x => x!["pattern"]!.GetValue<string>() == "[ipv4-addr:value = '198.51.100.7']")!["confidence"]!.GetValue<int>());
+        Assert.Equal(40, indicators.Single(x => x!["pattern"]!.GetValue<string>() == "[email-addr:value = 'cebo@malicious.example']")!["confidence"]!.GetValue<int>());
 
         Assert.Equal(IdsOf(first.Content), IdsOf(second.Content));
     }
