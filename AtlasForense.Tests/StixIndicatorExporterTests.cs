@@ -38,8 +38,8 @@ public sealed class StixIndicatorExporterTests
         Assert.Contains(indicators, x => x!["pattern"]!.GetValue<string>() == "[email-addr:value = 'cebo@malicious.example']");
         Assert.Contains(indicators, x => x!["pattern"]!.GetValue<string>().StartsWith("[file:hashes.'SHA-256' = '"));
         Assert.Contains(indicators, x => x!["pattern"]!.GetValue<string>().StartsWith("[file:hashes.MD5 = '"));
-        Assert.Contains(indicators, x => x!["pattern"]!.GetValue<string>() == "[windows-registry-key:key = 'HKLM\\Software\\Persist']");
-        Assert.Contains(indicators, x => x!["pattern"]!.GetValue<string>() == "[mutex:name = 'Global\\Lock']");
+        Assert.Contains(indicators, x => x!["pattern"]!.GetValue<string>() == "[windows-registry-key:key = 'HKLM\\\\Software\\\\Persist']");
+        Assert.Contains(indicators, x => x!["pattern"]!.GetValue<string>() == "[mutex:name = 'Global\\\\Lock']");
         Assert.All(indicators, x => Assert.Equal("indicator", x!["type"]!.GetValue<string>()));
         Assert.All(indicators, x => Assert.StartsWith("indicator--", x!["id"]!.GetValue<string>()));
         var malicious = indicators.Single(x => x!["name"]!.GetValue<string>().Contains("malicious.example/gate"))!;

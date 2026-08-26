@@ -33,6 +33,8 @@ public sealed class SignedForensicPackageBuilder : IForensicPackageBuilder
         var files = new List<(string ArchivePath, string SourcePath, byte[]? Content, PackageManifestEntry Manifest)>();
         var reportBytes = Encoding.UTF8.GetBytes(report.Content);
         files.Add(("report/report.md", string.Empty, reportBytes, new("report/report.md", reportBytes.Length, Hash(reportBytes), "approved-report")));
+        try
+        {
         foreach (var evidence in item.Evidence.OrderBy(x => x.Identifier, StringComparer.Ordinal))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -76,14 +78,14 @@ public sealed class SignedForensicPackageBuilder : IForensicPackageBuilder
             if (!await VerifyWrittenPackageAsync(path, files.Select(x => x.Manifest), cancellationToken))
             {
                 File.Delete(path);
-                DeleteDecryptedTemps(files);
                 return new(false, "El paquete escrito no coincide con el manifiesto; fue descartado.", string.Empty, string.Empty, string.Empty, string.Empty);
             }
             var packageHash = await HashFileAsync(path, cancellationToken);
-            DeleteDecryptedTemps(files);
             return new(true, "Paquete firmado y verificado antes de entrega.", fileName, path, packageHash, signature.CertificateSha256);
         }
-        catch { if (File.Exists(path)) File.Delete(path); DeleteDecryptedTemps(files); throw; }
+        catch { if (File.Exists(path)) File.Delete(path); throw; }
+        }
+        finally { DeleteDecryptedTemps(files); }
     }
 
     private static void DeleteDecryptedTemps(List<(string ArchivePath, string SourcePath, byte[]? Content, PackageManifestEntry Manifest)> files)

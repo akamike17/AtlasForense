@@ -36,6 +36,7 @@ public sealed class ForensicPackageTests : IDisposable
 
         Assert.True(package.Success, package.Message);
         Assert.Equal(64, package.Sha256.Length);
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root, "App_Data", "Exports"), "*.plain"));
         var certificatePath = Path.Combine(_root, "trusted.cer");
         await File.WriteAllBytesAsync(certificatePath, _signer.PublicCertificate);
         var valid = await RunVerifier(package.Path, certificatePath);

@@ -72,7 +72,7 @@ public sealed class StixIndicatorExporter : IStixIndicatorExporter
 
     private static string? BuildPattern(CaseIndicator indicator)
     {
-        var value = indicator.Value.Replace("'", "\\'");
+        var value = indicator.Value.Replace("\\", "\\\\").Replace("'", "\\'");
         return indicator.Type switch
         {
             IndicatorType.Url => $"[url:value = '{value}']",

@@ -41,8 +41,8 @@ jobs:
         with:
           name: zap-dast-evidence
           path: |
-            zap-report.json
-            zap-report.html
+            .github/zap/zap-report.json
+            .github/zap/zap-report.html
             app.log
           if-no-files-found: error
           retention-days: 90
