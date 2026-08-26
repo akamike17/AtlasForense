@@ -702,7 +702,7 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Directory.Delete(appData, true);
         Assert.False(Directory.Exists(appData));
 
-        var recovered = new JsonForensicCaseService(new TestEnvironment(_root), evidenceCipher: _cipher);
+        var recovered = new JsonForensicCaseService(new TestEnvironment(_root), [new StaticTextAnalyzer(), new BinaryMetadataAnalyzer()], evidenceCipher: _cipher);
         Assert.Empty(recovered.GetAll());
         Directory.CreateDirectory(Path.Combine(appData, "Backups"));
         File.Copy(Path.Combine(staging, backup.FileName), Path.Combine(appData, "Backups", backup.FileName));
