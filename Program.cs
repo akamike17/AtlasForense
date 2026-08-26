@@ -84,6 +84,7 @@ builder.Services.AddSingleton<IStixIndicatorExporter, StixIndicatorExporter>();
 builder.Services.AddSingleton<IForensicPackageSigner, CertificateForensicPackageSigner>();
 builder.Services.AddSingleton<IForensicPackageBuilder, SignedForensicPackageBuilder>();
 builder.Services.AddSingleton<IContentTransformationService, ContentTransformationService>();
+builder.Services.AddSingleton<IIsolatedProcessSandbox, IsolatedProcessSandbox>();
 builder.Services.AddSingleton<IForensicAnalyzer, StaticTextAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, BinaryMetadataAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, SqliteForensicAnalyzer>();

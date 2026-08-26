@@ -680,6 +680,57 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Assert.Contains(item.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED" && x.Detail.Contains("webshell-heuristics"));
     }
 
+    [Fact]
+    public async Task FullRecoveryDrill_DestroysDataDirectoryAndRestoresAuditChainAndEvidence()
+    {
+        var item = await CreateCase();
+        await Authorize(item.Id);
+        await Acquire(item.Id, "evidence.txt", "known disaster-recovery payload https://dr.example.test");
+        await _service.StartAnalysisAsync(item.Id, "Analyst", default);
+        var evidenceId = item.Evidence.Single().Id;
+        Assert.True((await _service.AnalyzeEvidenceAsync(item.Id, evidenceId, "Analyst", default)).Success);
+        var auditHead = item.AuditTrail.Last().EntryHash;
+
+        var backup = await _service.CreateBackupAsync(default);
+        Assert.True(backup.Success, backup.Message);
+        var appData = Path.Combine(_root, "App_Data");
+        var staging = Path.Combine(_root, "dr-staging");
+        Directory.CreateDirectory(staging);
+        File.Copy(Path.Combine(appData, "Backups", backup.FileName), Path.Combine(staging, backup.FileName));
+        CopyDirectory(Path.Combine(appData, "Evidence"), Path.Combine(staging, "Evidence"));
+
+        Directory.Delete(appData, true);
+        Assert.False(Directory.Exists(appData));
+
+        var recovered = new JsonForensicCaseService(new TestEnvironment(_root), evidenceCipher: _cipher);
+        Assert.Empty(recovered.GetAll());
+        Directory.CreateDirectory(Path.Combine(appData, "Backups"));
+        File.Copy(Path.Combine(staging, backup.FileName), Path.Combine(appData, "Backups", backup.FileName));
+        CopyDirectory(Path.Combine(staging, "Evidence"), Path.Combine(appData, "Evidence"));
+
+        var restore = await recovered.RestoreBackupAsync(backup.FileName, default);
+        Assert.True(restore.Success, restore.Message);
+
+        var verify = await recovered.VerifyAsync(default);
+        Assert.True(verify.Success, verify.Message);
+        var restoredCase = recovered.Get(item.Id);
+        Assert.NotNull(restoredCase);
+        Assert.Equal(auditHead, restoredCase!.AuditTrail.Last().EntryHash);
+        var rerun = await recovered.AnalyzeEvidenceAsync(item.Id, evidenceId, "Analyst", default);
+        Assert.True(rerun.Success, rerun.Message);
+        Assert.Contains(restoredCase.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED");
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            var target = Path.Combine(destination, Path.GetRelativePath(source, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target);
+        }
+    }
+
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
     private Task<OperationResult> Authorize(Guid id) => _service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = id, Authority = "Test authority", Reference = "AUTH-001", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
     private Task<OperationResult> Acquire(Guid id, string name, string content) => Acquire(id, name, Encoding.UTF8.GetBytes(content));
