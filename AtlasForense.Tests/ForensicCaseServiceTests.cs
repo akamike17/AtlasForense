@@ -506,6 +506,49 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Assert.Contains(item.Entities, x => x.Id == relationship.TargetEntityId);
     }
 
+    [Fact]
+    public async Task Pipeline_RunsStructuralAnalyzersOnAcquiredPdfAndOoxmlEvidence()
+    {
+        var inspector = new ArchiveSafetyInspector(Microsoft.Extensions.Options.Options.Create(new ForensicStorageOptions { MaxArchiveEntries = 50, MaxArchiveExpandedBytes = 8 * 1024 * 1024, MaxCompressionRatio = 100, MaxArchiveDepth = 4 }));
+        var service = new JsonForensicCaseService(new TestEnvironment(_root), [new PdfStructureAnalyzer(), new OfficeDocumentAnalyzer(inspector), new ElfStructureAnalyzer()], inspector);
+        var item = await service.CreateAsync(new CreateCaseInput { Title = "Structural case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
+        await service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = item.Id, Authority = "Test authority", Reference = "AUTH-002", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
+
+        var pdfBytes = Encoding.UTF8.GetBytes("%PDF-1.7\n1 0 obj << /OpenAction << /S /JavaScript >> >> endobj\n%%EOF");
+        var pdf = await service.AcquireAsync(AcquisitionInput(item.Id, new FormFile(new MemoryStream(pdfBytes), 0, pdfBytes.Length, "File", "muestra.pdf")), default);
+        Assert.True(pdf.Success, pdf.Message);
+
+        using var docxStream = new MemoryStream();
+        using (var zip = new ZipArchive(docxStream, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            var contentTypes = zip.CreateEntry("[Content_Types].xml");
+            using (var writer = new StreamWriter(contentTypes.Open())) writer.Write("<Types><Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/></Types>");
+            var document = zip.CreateEntry("word/document.xml");
+            using (var writer = new StreamWriter(document.Open())) writer.Write("<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"/>");
+        }
+        var docxBytes = docxStream.ToArray();
+        var docx = await service.AcquireAsync(AcquisitionInput(item.Id, new FormFile(new MemoryStream(docxBytes), 0, docxBytes.Length, "File", "informe.docx")), default);
+        Assert.True(docx.Success, docx.Message);
+
+        Assert.True((await service.StartAnalysisAsync(item.Id, "Analyst", default)).Success);
+        var pdfEvidence = item.Evidence.Single(x => x.OriginalFileName == "muestra.pdf");
+        var docxEvidence = item.Evidence.Single(x => x.OriginalFileName == "informe.docx");
+        Assert.Equal("PDF", pdfEvidence.DetectedFileType);
+        Assert.Equal("ZIP", docxEvidence.DetectedFileType);
+
+        var pdfResult = await service.AnalyzeEvidenceAsync(item.Id, pdfEvidence.Id, "Analyst", default);
+        var docxResult = await service.AnalyzeEvidenceAsync(item.Id, docxEvidence.Id, "Analyst", default);
+
+        Assert.True(pdfResult.Success, pdfResult.Message);
+        Assert.True(docxResult.Success, docxResult.Message);
+        Assert.Contains(item.Artifacts, x => x.Name == "Versión PDF" && x.Value == "1.7");
+        Assert.Contains(item.Artifacts, x => x.Name == "JavaScript en PDF");
+        Assert.Contains(item.Artifacts, x => x.Name == "Tipo OOXML" && x.Value == "Documento Word (DOCX)");
+        Assert.All(item.AnalysisRuns, run => { Assert.True(run.Success); Assert.True(run.NetworkBlocked); Assert.False(run.SampleExecuted); });
+        Assert.Contains(item.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED" && x.Detail.Contains("pdf-structure"));
+        Assert.Contains(item.AuditTrail, x => x.Action == "STATIC_ANALYSIS_COMPLETED" && x.Detail.Contains("office-document-structure"));
+    }
+
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);
     private Task<OperationResult> Authorize(Guid id) => _service.AuthorizeAsync(new AuthorizeCaseInput { CaseId = id, Authority = "Test authority", Reference = "AUTH-001", ApprovedBy = "Supervisor", Limitations = "Laboratory validation" }, default);
     private Task<OperationResult> Acquire(Guid id, string name, string content) => Acquire(id, name, Encoding.UTF8.GetBytes(content));
