@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <DefaultItemExcludes>$(DefaultItemExcludes);AtlasForense.Tests/**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);AtlasForense.Tests/**;AtlasForense.Verifier/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

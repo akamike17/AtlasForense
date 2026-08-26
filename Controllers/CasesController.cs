@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace AtlasForense.Controllers;
 
 [AutoValidateAntiforgeryToken]
-public sealed class CasesController(IForensicCaseService service, IForensicReportBuilder reportBuilder, IUserAccountService accounts) : Controller
+public sealed class CasesController(IForensicCaseService service, IForensicReportBuilder reportBuilder, IForensicPackageBuilder packageBuilder, IUserAccountService accounts) : Controller
 {
     [HttpGet] public IActionResult Index() => View(User.IsInRole(nameof(ForensicRole.Administrator)) ? service.GetAll() : service.GetAll().Where(HasAnyCaseAccess).ToList());
     [HttpGet, Authorize(Policy = "Examine")] public IActionResult Create() => View(new CreateCaseInput());
@@ -67,6 +67,9 @@ public sealed class CasesController(IForensicCaseService service, IForensicRepor
 
     [HttpPost, Authorize(Policy = "CloseCase")] public Task<IActionResult> Close(Guid id, CancellationToken token) => Execute(id, () => service.CloseAsync(id, Actor, token), ForensicRole.Reviewer);
 
+    [HttpPost, Authorize(Policy = "ReopenCase")]
+    public Task<IActionResult> Reopen(Guid id, string reason, CancellationToken token) => Execute(id, () => service.ReopenAsync(id, Actor, reason, token));
+
     [HttpPost, Authorize(Policy = "AdministerUsers")]
     public Task<IActionResult> AssignUser(CaseAssignmentInput input, CancellationToken token)
     {
@@ -91,6 +94,20 @@ public sealed class CasesController(IForensicCaseService service, IForensicRepor
         var document = reportBuilder.BuildMarkdown(item);
         Response.Headers.Append("X-Content-SHA256", document.Sha256);
         return File(System.Text.Encoding.UTF8.GetBytes(document.Content), "text/markdown; charset=utf-8", document.FileName);
+    }
+
+    [HttpGet, Authorize(Policy = "ExportCase")]
+    public async Task<IActionResult> ExportPackage(Guid id, CancellationToken token)
+    {
+        var item = service.Get(id);
+        if (item is null) return NotFound();
+        if (!HasAnyCaseAccess(item)) return Forbid();
+        var result = await packageBuilder.BuildAsync(item, token);
+        if (!result.Success) { TempData["Error"] = result.Message; return RedirectToAction(nameof(Details), new { id }); }
+        Response.Headers.Append("X-Content-SHA256", result.Sha256);
+        Response.Headers.Append("X-Signer-Certificate-SHA256", result.CertificateSha256);
+        var stream = new FileStream(result.Path, FileMode.Open, FileAccess.Read, FileShare.Read, 131072, FileOptions.Asynchronous | FileOptions.SequentialScan | FileOptions.DeleteOnClose);
+        return File(stream, "application/vnd.atlasforense.package+zip", result.FileName);
     }
 
     private async Task<IActionResult> Execute(Guid id, Func<Task<OperationResult>> operation, params ForensicRole[] requiredRoles)

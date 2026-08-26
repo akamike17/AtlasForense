@@ -98,7 +98,7 @@
     }
     @if (Model.Report is not null)
     {
-        <div class="report-ready"><div><h3>Informe íntegro disponible</h3><code class="hash">@Model.Report.IntegrityHash</code></div><a asp-action="Report" asp-route-id="@Model.Id" class="btn btn-outline-light">Vista imprimible</a><a asp-action="ExportMarkdown" asp-route-id="@Model.Id" class="btn btn-outline-light">Exportar Markdown</a></div>
+        <div class="report-ready"><div><h3>Informe v@Model.Report.Version íntegro disponible</h3><code class="hash">@Model.Report.IntegrityHash</code></div><a asp-action="Report" asp-route-id="@Model.Id" class="btn btn-outline-light">Vista imprimible</a><a asp-action="ExportMarkdown" asp-route-id="@Model.Id" class="btn btn-outline-light">Exportar Markdown</a>@if (Model.ReportReview?.Approved == true) { <a asp-action="ExportPackage" asp-route-id="@Model.Id" class="btn btn-primary">Paquete firmado</a> }</div>
         @if (Model.Status == CaseStatus.Reporting && Model.ReportReview?.Approved != true && canReview)
         {
             <form asp-action="ReviewReport" method="post" class="form-grid compact"><input type="hidden" name="id" value="@Model.Id" /><label class="field span-2">Observaciones<input name="notes" class="form-control" /></label><button name="approve" value="true" class="btn btn-primary">Aprobar informe</button><button name="approve" value="false" class="btn btn-danger">Devolver al análisis</button></form>
@@ -109,5 +109,10 @@
         }
     }
 </section>
+
+@if (Model.Status == CaseStatus.Closed && User.IsInRole(nameof(ForensicRole.Administrator)))
+{
+    <section class="panel"><h2>Reapertura controlada</h2><form asp-action="Reopen" method="post" class="form-grid compact"><input type="hidden" name="id" value="@Model.Id" /><label class="field span-2">Justificación<textarea name="reason" class="form-control" required maxlength="1000"></textarea></label><button class="btn btn-danger span-2">Reabrir conservando el cierre</button></form></section>
+}
 
 <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Registro encadenado</span><h2>Auditoría</h2></div><span class="check">@Model.AuditTrail.Count eventos</span></div><div class="timeline">@foreach (var audit in Model.AuditTrail.OrderByDescending(x => x.Sequence)) { <div><b>@audit.Sequence</b><p><strong>@audit.Action</strong> · @audit.Actor<br /><span>@audit.Detail</span><br /><code>@audit.EntryHash[..16]…</code></p><time>@audit.OccurredAtUtc.ToString("u")</time></div> }</div></section>

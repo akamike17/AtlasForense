@@ -27,7 +27,9 @@ public sealed class ForensicCase
     public List<CaseNote> Notes { get; set; } = [];
     public List<Finding> Findings { get; set; } = [];
     public FinalReport? Report { get; set; }
+    public List<FinalReport> ReportVersions { get; set; } = [];
     public ReportReview? ReportReview { get; set; }
+    public List<CaseClosure> Closures { get; set; } = [];
     public List<AuditEntry> AuditTrail { get; set; } = [];
     public List<CaseAssignment> Assignments { get; set; } = [];
 }
@@ -94,6 +96,7 @@ public sealed class Finding
 
 public sealed class FinalReport
 {
+    public int Version { get; set; } = 1;
     public string ExecutiveSummary { get; set; } = string.Empty;
     public string Methodology { get; set; } = string.Empty;
     public string Conclusions { get; set; } = string.Empty;
@@ -101,6 +104,18 @@ public sealed class FinalReport
     public string PreparedBy { get; set; } = string.Empty;
     public DateTimeOffset PreparedAtUtc { get; set; }
     public string IntegrityHash { get; set; } = string.Empty;
+}
+
+public sealed class CaseClosure
+{
+    public int Sequence { get; set; }
+    public DateTimeOffset ClosedAtUtc { get; set; }
+    public string ClosedBy { get; set; } = string.Empty;
+    public string ApprovedReportHash { get; set; } = string.Empty;
+    public string EvidenceInventoryHash { get; set; } = string.Empty;
+    public DateTimeOffset? ReopenedAtUtc { get; set; }
+    public string ReopenedBy { get; set; } = string.Empty;
+    public string ReopenReason { get; set; } = string.Empty;
 }
 
 public sealed class ReportReview

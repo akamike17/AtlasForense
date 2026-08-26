@@ -67,6 +67,12 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                     previous = entry.EntryHash;
                     expectedSequence++;
                 }
+                await using var checkpoint = connection.CreateCommand();
+                checkpoint.CommandText = "SELECT EntryCount, HeadHash FROM AuditCheckpoints WHERE CaseId=$id;";
+                checkpoint.Parameters.AddWithValue("$id", item.Id.ToString("D"));
+                await using var reader = await checkpoint.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken) || reader.GetInt64(0) != item.AuditTrail.Count || !reader.GetString(1).Equals(previous, StringComparison.OrdinalIgnoreCase))
+                    return new(false, $"Punto de control de auditoría inválido en {item.Folio}.", _cases.Count);
             }
             return new(true, "Base SQLite y cadenas de auditoría verificadas.", _cases.Count);
         }
@@ -292,9 +298,10 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
     public Task<OperationResult> PrepareReportAsync(ReportInput input, CancellationToken token) => MutateAsync(input.CaseId, token, item =>
     {
         if (item.Status != CaseStatus.Analyzing || item.Findings.Count == 0) return OperationResult.Fail("El informe requiere al menos un hallazgo documentado.");
-        var report = new FinalReport { ExecutiveSummary = input.ExecutiveSummary.Trim(), Methodology = input.Methodology.Trim(), Conclusions = input.Conclusions.Trim(), Recommendations = input.Recommendations.Trim(), PreparedBy = input.PreparedBy.Trim(), PreparedAtUtc = DateTimeOffset.UtcNow };
+        var report = new FinalReport { Version = item.ReportVersions.Select(x => x.Version).DefaultIfEmpty().Max() + 1, ExecutiveSummary = input.ExecutiveSummary.Trim(), Methodology = input.Methodology.Trim(), Conclusions = input.Conclusions.Trim(), Recommendations = input.Recommendations.Trim(), PreparedBy = input.PreparedBy.Trim(), PreparedAtUtc = DateTimeOffset.UtcNow };
         report.IntegrityHash = HashText($"{item.Folio}|{report.ExecutiveSummary}|{report.Methodology}|{report.Conclusions}|{report.Recommendations}|{report.PreparedBy}|{report.PreparedAtUtc:O}");
         item.Report = report;
+        item.ReportVersions.Add(report);
         item.ReportReview = null;
         item.Status = CaseStatus.Reporting;
         AppendAudit(item, input.PreparedBy, "REPORT_PREPARED", $"Informe sellado: {report.IntegrityHash}");
@@ -319,8 +326,20 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
             return OperationResult.Fail("El cierre requiere un informe sellado y aprobado por revisión independiente.");
         item.Status = CaseStatus.Closed;
         item.Evidence.ForEach(x => x.Status = EvidenceStatus.Sealed);
-        AppendAudit(item, actor, "CASE_CLOSED", "Expediente e inventario de evidencia sellados.");
+        var inventoryHash = HashText(string.Join("\n", item.Evidence.OrderBy(x => x.Identifier, StringComparer.Ordinal).Select(x => $"{x.Identifier}|{x.Sha256}|{x.SizeBytes}")));
+        item.Closures.Add(new CaseClosure { Sequence = item.Closures.Count + 1, ClosedAtUtc = DateTimeOffset.UtcNow, ClosedBy = actor, ApprovedReportHash = item.Report.IntegrityHash, EvidenceInventoryHash = inventoryHash });
+        AppendAudit(item, actor, "CASE_CLOSED", $"Informe {item.Report.IntegrityHash}; inventario {inventoryHash}.");
         return OperationResult.Ok("Etapa 4 completada. Expediente cerrado y sellado.");
+    });
+
+    public Task<OperationResult> ReopenAsync(Guid id, string actor, string reason, CancellationToken token) => MutateAsync(id, token, item =>
+    {
+        if (item.Status != CaseStatus.Closed || item.Closures.Count == 0) return OperationResult.Fail("Sólo un expediente cerrado puede reabrirse.");
+        if (string.IsNullOrWhiteSpace(reason)) return OperationResult.Fail("La reapertura requiere una justificación.");
+        var closure = item.Closures[^1]; closure.ReopenedAtUtc = DateTimeOffset.UtcNow; closure.ReopenedBy = actor; closure.ReopenReason = reason.Trim();
+        item.Status = CaseStatus.Analyzing; item.Report = null; item.ReportReview = null; item.Evidence.ForEach(x => x.Status = EvidenceStatus.Verified);
+        AppendAudit(item, actor, "CASE_REOPENED", $"Cierre {closure.Sequence}; motivo: {reason.Trim()}");
+        return OperationResult.Ok("Expediente reabierto; las versiones cerradas permanecen inmutables.");
     });
 
     public Task<OperationResult> AssignUserAsync(CaseAssignmentInput input, Guid administratorId, string administrator, CancellationToken token) => MutateAsync(input.CaseId, token, item =>
@@ -424,6 +443,10 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
                 CaseId TEXT NOT NULL, UserId TEXT NOT NULL, Role INTEGER NOT NULL,
                 AssignedByUserId TEXT NOT NULL, AssignedAtUtc TEXT NOT NULL, Active INTEGER NOT NULL CHECK (Active IN (0,1)),
                 PRIMARY KEY (CaseId, UserId, AssignedAtUtc),
+                FOREIGN KEY (CaseId) REFERENCES Cases(Id) ON DELETE RESTRICT
+            );
+            CREATE TABLE IF NOT EXISTS AuditCheckpoints (
+                CaseId TEXT NOT NULL PRIMARY KEY, EntryCount INTEGER NOT NULL CHECK (EntryCount >= 0), HeadHash TEXT NOT NULL,
                 FOREIGN KEY (CaseId) REFERENCES Cases(Id) ON DELETE RESTRICT
             );
             INSERT OR IGNORE INTO SchemaMigrations (Version, AppliedAtUtc)
@@ -577,6 +600,14 @@ public sealed class JsonForensicCaseService : IForensicCaseService, IForensicDat
             insert.Parameters.AddWithValue("$role", (int)assignment.Role); insert.Parameters.AddWithValue("$by", assignment.AssignedByUserId.ToString("D"));
             insert.Parameters.AddWithValue("$at", assignment.AssignedAtUtc.ToUniversalTime().ToString("O")); insert.Parameters.AddWithValue("$active", assignment.Active);
             await insert.ExecuteNonQueryAsync(token);
+        }
+        await using (var checkpoint = connection.CreateCommand())
+        {
+            checkpoint.Transaction = transaction;
+            checkpoint.CommandText = "INSERT INTO AuditCheckpoints (CaseId, EntryCount, HeadHash) VALUES ($caseId,$count,$head) ON CONFLICT(CaseId) DO UPDATE SET EntryCount=excluded.EntryCount, HeadHash=excluded.HeadHash;";
+            checkpoint.Parameters.AddWithValue("$caseId", item.Id.ToString("D")); checkpoint.Parameters.AddWithValue("$count", item.AuditTrail.Count);
+            checkpoint.Parameters.AddWithValue("$head", item.AuditTrail.LastOrDefault()?.EntryHash ?? "GENESIS");
+            await checkpoint.ExecuteNonQueryAsync(token);
         }
     }
 

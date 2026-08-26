@@ -288,6 +288,18 @@ public sealed class ForensicCaseServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task IntegrityVerification_DetectsDeletedTailAuditEntry()
+    {
+        var item = await CreateCase();
+        item.AuditTrail.Clear();
+
+        var result = await _service.VerifyAsync(default);
+
+        Assert.False(result.Success);
+        Assert.Contains("control de auditoría", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Startup_ImportsLegacyJsonWithoutDeletingIt()
     {
         var importRoot = Path.Combine(Path.GetTempPath(), $"atlas-forense-import-{Guid.NewGuid():N}");
@@ -327,6 +339,27 @@ public sealed class ForensicCaseServiceTests : IDisposable
         Assert.False(conflict.Success);
         Assert.Contains(item.Assignments, assignment => assignment.UserId == examinerId && assignment.Role == ForensicRole.Examiner && assignment.Active);
         Assert.Contains(item.Assignments, assignment => assignment.UserId == reviewerId && assignment.Role == ForensicRole.Reviewer && assignment.Active);
+    }
+
+    [Fact]
+    public async Task Reopening_PreservesClosedReportAndCreatesNextImmutableVersion()
+    {
+        var item = await CreateCase();
+        await Authorize(item.Id); await Acquire(item.Id, "evidence.txt", "evidence"); await _service.StartAnalysisAsync(item.Id, "Examiner", default);
+        await AddFinding(item.Id); await PrepareReport(item.Id); await _service.ReviewReportAsync(item.Id, "Reviewer", true, "Approved", default); await _service.CloseAsync(item.Id, "Reviewer", default);
+        var firstHash = item.Report!.IntegrityHash;
+        Assert.Equal(1, item.Report.Version);
+        Assert.Equal(firstHash, item.Closures.Single().ApprovedReportHash);
+
+        var reopened = await _service.ReopenAsync(item.Id, "Administrator", "Additional authorized evidence", default);
+        await PrepareReport(item.Id);
+
+        Assert.True(reopened.Success, reopened.Message);
+        Assert.Equal(2, item.Report!.Version);
+        Assert.Equal(2, item.ReportVersions.Count);
+        Assert.Equal(firstHash, item.ReportVersions[0].IntegrityHash);
+        Assert.NotNull(item.Closures[0].ReopenedAtUtc);
+        Assert.Equal("Additional authorized evidence", item.Closures[0].ReopenReason);
     }
 
     private Task<ForensicCase> CreateCase() => _service.CreateAsync(new CreateCaseInput { Title = "Validated case", RequestingOrganization = "Forensic Lab", LeadExaminer = "Examiner A", Scope = "Known test data only" }, default);

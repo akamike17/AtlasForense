@@ -65,6 +65,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AuthorizeCase", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Examiner)));
     options.AddPolicy("Review", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Reviewer)));
     options.AddPolicy("CloseCase", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Reviewer)));
+    options.AddPolicy("ReopenCase", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator)));
+    options.AddPolicy("ExportCase", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Examiner), nameof(AtlasForense.Models.ForensicRole.Reviewer)));
     options.AddPolicy("Custody", policy => policy.RequireRole(nameof(AtlasForense.Models.ForensicRole.Administrator), nameof(AtlasForense.Models.ForensicRole.Custodian)));
     options.AddPolicy("Audit", policy => policy.RequireRole(Enum.GetNames<AtlasForense.Models.ForensicRole>()));
 });
@@ -72,6 +74,8 @@ builder.Services.AddSingleton<IForensicCaseService, JsonForensicCaseService>();
 builder.Services.AddSingleton<IForensicDataMaintenance>(provider =>
     (JsonForensicCaseService)provider.GetRequiredService<IForensicCaseService>());
 builder.Services.AddSingleton<IForensicReportBuilder, MarkdownForensicReportBuilder>();
+builder.Services.AddSingleton<IForensicPackageSigner, CertificateForensicPackageSigner>();
+builder.Services.AddSingleton<IForensicPackageBuilder, SignedForensicPackageBuilder>();
 builder.Services.AddSingleton<IContentTransformationService, ContentTransformationService>();
 builder.Services.AddSingleton<IForensicAnalyzer, StaticTextAnalyzer>();
 builder.Services.AddSingleton<IForensicAnalyzer, BinaryMetadataAnalyzer>();
