@@ -1,0 +1,6 @@
+# Reglas del escaneo baseline de OWASP ZAP (formato oficial: id TAB accion TAB descripcion)
+# Acciones: IGNORE (no reportar), WARN (advertencia), FAIL (fallo del escaneo)
+10015	IGNORE	Re-examine Cache Control on Server Responses (la aplicacion gestiona cache por cabeceras de sesion)
+10027	IGNORE	Information Disclosure - Suspicious Comments (falsos positivos en JavaScript de librerias de terceros)
+10050	IGNORE	Retrieval from Cache - No Expiry or Cache Control (paginas dinamicas autenticadas)
+10202	IGNORE	Absence of Anti-CSRF Tokens (las rutas publicas no tienen formularios; los autenticados usan antiforgery)

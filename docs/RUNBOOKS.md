@@ -22,6 +22,10 @@
 
 Procedimiento completo y ensayo automatizado en `RECOVERY.md`. Resumen: detener instancias, devolver respaldo + evidencia + claves, `--data-restore <archivo>`, `--data-verify`, confirmar inventario.
 
+## DAST externo
+
+El workflow `.github/workflows/dast.yml` publica la aplicación, la arranca contra `127.0.0.1:8080` y ejecuta un baseline de OWASP ZAP (manual, en cada push a master y semanalmente). La evidencia (`zap-report.json`, `zap-report.html`, log de la aplicación) queda archivada 90 días. Triaje: toda advertencia nueva se clasifica en el expediente de seguridad; las excepciones permanentes solo se aceptan en `.github/zap/rules.tsv` con justificación escrita. El escaneo cubre la superficie anónima; las rutas autenticadas están cubiertas por las sondas DAST automatizadas de la suite.
+
 ## Recuperación ante desastre (DR)
 
 - Objetivo: restaurar la capacidad de análisis sobre el último respaldo válido; RPO = frecuencia de respaldo configurada, RTO = tiempo de re-despliegue del anfitrión.
